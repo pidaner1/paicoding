@@ -1068,6 +1068,10 @@
     background-color: var(--pai-bg-white-fff);
     flex: none;
     display: block;
+    min-height: calc(100vh - 60px);
+    overflow: visible;
+    overscroll-behavior: auto;
+    scrollbar-gutter: auto;
   }
 
   .for-menu {
@@ -1129,6 +1133,9 @@
 
   .article-wrap {
     display: block;
+    height: auto;
+    min-height: calc(100vh - 60px);
+    overflow: visible;
   }
 
   .step-btn--prev .article-change-item {
