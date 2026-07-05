@@ -1,10 +1,19 @@
 @font-face {
   font-family: 'DingTalk JinBuTi';
-  src: url('https://cdn.paicoding.com/stutymore/6-skills-recommend-DingTalk_JinBuTi.ttf') format('truetype');
+  src: url('https://cdn.paicoding.com/stutymore/pai-coding-DingTalk_JinBuTi.ttf') format('truetype');
 }
 
 .jinbuti {
   font-family: 'DingTalk JinBuTi';
+}
+
+@font-face {
+  font-family: 'din bold';
+  src: url('https://cdn.paicoding.com/stutymore/pai-coding-din-bold.ttf') format('truetype');
+}
+
+.din-bold {
+  font-family: 'din bold';
 }
 
 page {
@@ -89,4 +98,14 @@ button::after {
 .retry-button {
   width: 220rpx;
   margin: 28rpx auto 0;
+}
+
+.flex-col-ic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gap-1 {
+  gap: 4px;
 }

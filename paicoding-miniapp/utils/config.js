@@ -1,5 +1,5 @@
 const API_BASE_URL = {
-  develop: 'http://192.168.51.88:8080',
+  develop: 'http://192.168.51.88:9293',
   trial: 'https://paicoding.com',
   release: 'https://paicoding.com'
 };

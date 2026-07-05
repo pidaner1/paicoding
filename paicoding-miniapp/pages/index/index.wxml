@@ -1,5 +1,5 @@
 <view class="header">
-  <t-image src="https://cdn.paicoding.com/stutymore/6-skills-recommend-home-header.png" width="100vw" mode="widthFix" />
+  <t-image src="https://cdn.paicoding.com/stutymore/pai-coding-home-header.png" width="100vw" mode="widthFix" />
   <text class="header-title jinbuti">技术派</text>
   <text class="header-subtitle jinbuti">AI时代不迷路 就上技术派</text>
   <view class="search-wrapper">

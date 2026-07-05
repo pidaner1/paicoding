@@ -1,5 +1,8 @@
 <view class="profile-container">
   <image src="/static/images/bg.png" class="bg" mode="widthFix" />
+
+  <t-navbar class="navbar" />
+
   <view class="base-info">
     <t-avatar image="{{ '/static/images/avatar.png' }}" class="avatar" size="80px" />
     <view class="info">
@@ -11,6 +14,71 @@
     </view>
   </view>
 
+  <view class="stats-card">
+    <image src="https://cdn.paicoding.com/stutymore/pai-coding-card.png" class="bg" mode="widthFix" />
+    <view class="wrapper">
+      <view class="item">
+        <text class="item-value">275</text>
+        <text class="item-label">加入天数</text>
+      </view>
+      <view class="item">
+        <text class="item-value">275</text>
+        <text class="item-label">关注</text>
+      </view>
+      <view class="item">
+        <text class="item-value">275</text>
+        <text class="item-label">粉丝</text>
+      </view>
+    </view>
+  </view>
+
   <view class="card">
+    <view class="flex-col-ic">
+      <image src="/static/images/article.png" class="icon" />
+      <text class="label">我的文章</text>
+    </view>
+    <view class="flex-col-ic">
+      <image src="/static/images/favorite.png" class="icon" />
+      <text class="label">我的关注</text>
+    </view>
+    <view class="flex-col-ic">
+      <image src="/static/images/collect.png" class="icon" />
+      <text class="label">我的收藏</text>
+    </view>
+    <view class="flex-col-ic">
+      <image src="/static/images/history.png" class="icon" />
+      <text class="label">浏览历史</text>
+    </view>
+  </view>
+
+  <view class="list">
+    <view class="row">
+      <image src="/static/images/published.png" class="icon" />
+      <text class="label">已发布文章</text>
+      <text class="value">10<text class="unit">篇</text></text>
+    </view>
+
+    <view class="row">
+      <image src="/static/images/favorite-outline.png" class="icon" />
+      <text class="label">文章被点赞</text>
+      <text class="value">10<text class="unit">次</text></text>
+    </view>
+
+    <view class="row">
+      <image src="/static/images/read.png" class="icon" />
+      <text class="label">文章被阅读</text>
+      <text class="value">10<text class="unit">次</text></text>
+    </view>
+
+    <view class="row">
+      <image src="/static/images/collect-outline.png" class="icon" />
+      <text class="label">文章被收藏</text>
+      <text class="value">10<text class="unit">篇</text></text>
+    </view>
+  </view>
+
+  <view class="logout-btn">
+    <image src="/static/images/logout.png" class="icon" />
+    <text>退出登录</text>
   </view>
 </view>
