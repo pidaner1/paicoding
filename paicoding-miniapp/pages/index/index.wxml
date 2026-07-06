@@ -41,9 +41,20 @@
     </view>
     <view class="footer">
       <view class="meta">
-        <text>阅读 {{item.readCount}}</text>
-        <text>点赞 {{item.praiseCount}}</text>
-        <text>评论 {{item.commentCount}}</text>
+        <view class="flex-ic">
+          <image src="/static/images/article-read.png" class="icon" />
+          <text class="value">{{item.readCount}}</text>
+        </view>
+        
+        <view class="flex-ic">
+          <image src="/static/images/article-praise.png" class="icon" />
+          <text class="value">{{item.praiseCount}}</text>
+        </view>
+        
+        <view class="flex-ic">
+          <image src="/static/images/article-comment.png" class="icon" />
+          <text class="value">{{item.commentCount}}</text>
+        </view>
       </view>
       <view class="tags">
         <view wx:for="{{item.tags}}" wx:for-item="child" wx:key="child" class="tag">{{child}}</view>

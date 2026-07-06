@@ -94,7 +94,7 @@
 .cover {
   width: 24vw;
   height: 18vw;
-  border-radius: 14rpx;
+  border-radius: 8rpx;
 }
 
 .article-body {
@@ -141,8 +141,8 @@
 
 .tag {
   font-size: 24rpx;
-  color: #0BC196;
-  background-color: #0BC19620;
+  color: #aaa;
+  background-color: #f6f7fb;
   border-radius: 8rpx;
   padding: 4rpx 12rpx;
 }
@@ -150,7 +150,7 @@
 .meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 20rpx;
   color: #999;
   font-size: 24rpx;
 }
@@ -165,4 +165,15 @@
   height: 88rpx;
   line-height: 88rpx;
   text-align: center;
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.value {
+  font-size: 12px;
+  color: #999;
 }
