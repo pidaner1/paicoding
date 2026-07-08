@@ -1,5 +1,6 @@
 const { request } = require('../../utils/request');
 const auth = require('../../utils/auth');
+const { formatDate } = require('../../utils/date');
 
 Page({
   data: {
@@ -374,6 +375,8 @@ Page({
     value.commentCount = Number(value.commentCount || 0);
     value.sourceHost = this.extractHost(sourceUrl);
     value.canRead = value.canRead !== false;
+    value.createTime = formatDate(value.createTime);
+
     return value;
   },
 

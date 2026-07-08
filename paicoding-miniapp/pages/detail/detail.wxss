@@ -6,7 +6,6 @@
 
 .article-head {
   padding: 36rpx 28rpx 24rpx;
-  border-bottom: 1rpx solid #e5e7eb;
 }
 
 .title {
@@ -18,12 +17,10 @@
 
 .meta {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 14rpx;
+  gap: 16rpx;
   margin-top: 22rpx;
-  color: #64748b;
-  font-size: 25rpx;
 }
 
 .stats {
@@ -36,8 +33,8 @@
 }
 
 .avatar {
-  width: 44rpx;
-  height: 44rpx;
+  width: 60rpx;
+  height: 60rpx;
   border-radius: 50%;
   background: #e5e7eb;
 }
@@ -343,16 +340,16 @@
 .back-top {
   position: fixed;
   right: 24rpx;
-  bottom: 132rpx;
+  bottom: 240rpx;
   z-index: 2;
-  width: 104rpx;
-  height: 64rpx;
-  border: 1rpx solid #cbd5e1;
-  border-radius: 8rpx;
-  background: #ffffff;
-  color: #334155;
-  font-size: 24rpx;
-  line-height: 62rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 100px;
+  background: #00000050;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(2rpx);
 }
 
 .action-bar {

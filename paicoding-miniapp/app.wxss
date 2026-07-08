@@ -1,3 +1,5 @@
+@import './styles/utils.wxss';
+
 @font-face {
   font-family: 'DingTalk JinBuTi';
   src: url('https://cdn.paicoding.com/stutymore/pai-coding-DingTalk_JinBuTi.ttf') format('truetype');
@@ -24,6 +26,7 @@ page {
   font-size: 28rpx;
   --td-input-prefix-icon-color: #c4c4c7;
   caret-color: #0BC196;
+  --td-brand-color: #0BC196;
 }
 
 .shadow {

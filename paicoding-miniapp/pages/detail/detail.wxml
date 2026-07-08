@@ -11,19 +11,18 @@
     <view class="meta">
       <image wx:if="{{article.authorAvatar}}" class="avatar" src="{{article.authorAvatar}}" mode="aspectFill"></image>
       <view wx:else class="avatar avatar-placeholder">{{article.authorInitial}}</view>
-      <text>{{article.authorName}}</text>
-      <text>{{article.readCount}} 阅读</text>
-    </view>
-    <view class="stats">
-      <text>{{article.praiseCount || 0}} 赞</text>
-      <text>{{article.collectionCount || 0}} 收藏</text>
-      <text>{{article.commentCount || 0}} 评论</text>
-    </view>
-    <view class="tags">
-      <text wx:for="{{article.tags}}" wx:key="*this" class="tag">{{item}}</text>
-    </view>
-    <view wx:if="{{article.sourceUrl}}" class="source-row" bindtap="copySourceUrl">
-      <text>原文：{{article.sourceHost || article.sourceType || '复制链接'}}</text>
+      <view class="flex-col flex-1">
+        <text class="text-gray-800 text-base">{{article.authorName}}</text>
+        <view class="flex text-xs gap-6">
+          <text class="text-gray-600">{{article.createTime}}</text>
+          <view class="flex-ic gap-1">
+            <image src="/static/images/article-read-dark.png" style="width: 20rpx" mode="widthFix" />
+            <text class="text-gray-600">{{article.readCount}} </text>
+          </view>
+        </view>
+      </view>
+
+      <t-button theme="primary" size="extra-small">关注</t-button>
     </view>
   </view>
 
@@ -31,15 +30,13 @@
     当前账号可能没有完整阅读权限，已展示可访问内容。
   </view>
 
-  <view wx:if="{{article}}" class="content-wrap">
-    <rich-text nodes="{{article.contentHtml}}"></rich-text>
-  </view>
+  <mp-html wx:if="{{article}}" content="{{article.contentHtml}}" lazy-load
+    container-style="padding: 15px; font-size: 16px;line-height: 1.7; color: #4b5563;" />
 
-  <view wx:if="{{article && article.imageUrls.length > 0}}" class="image-gallery">
-    <view class="gallery-title">文中图片</view>
-    <view class="gallery-grid">
-      <image wx:for="{{article.imageUrls}}" wx:key="*this" class="gallery-image" src="{{item}}" mode="aspectFill"
-        data-url="{{item}}" bindtap="previewImage"></image>
+  <view class="flex-ic p-8 gap-4">
+    <image src="/static/images/tag.png" style="width: 40rpx" mode="widthFix" />
+    <view wx:for="{{article.tags}}" wx:key="index" class="bg-gray-100 rounded px-4 py-1">
+      <text class="text-sm text-gray-700">{{item}}</text>
     </view>
   </view>
 
@@ -96,7 +93,8 @@
           <view wx:if="{{item.hasMoreChild}}"
             class="reply-more {{replyLoadingTopId === item.commentId ? 'reply-more--loading' : ''}}"
             data-top="{{item.commentId}}" bindtap="loadMoreReplies">
-            {{replyLoadingTopId === item.commentId ? '加载中' : '展开更多回复'}}</view>
+            {{replyLoadingTopId === item.commentId ? '加载中' : '展开更多回复'}}
+          </view>
         </view>
       </view>
     </view>
@@ -105,7 +103,9 @@
       bindtap="loadMoreComments">加载更多评论</button>
   </view>
 
-  <button wx:if="{{showBackTop}}" class="back-top" bindtap="backTop">顶部</button>
+  <view wx:if="{{showBackTop}}" class="back-top" bindtap="backTop">
+    <t-icon name="backtop" size="56rpx" color="#4b5563" />
+  </view>
 
   <view wx:if="{{article}}" class="action-bar">
     <button class="action {{article.praised ? 'action--active' : ''}}" disabled="{{praiseSubmitting}}"
