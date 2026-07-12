@@ -1,8 +1,10 @@
 {
   "t-avatar": "tdesign-miniprogram/avatar/avatar",
+  "t-badge": "tdesign-miniprogram/badge/badge",
   "t-button": "tdesign-miniprogram/button/button",
   "t-icon": "tdesign-miniprogram/icon/icon",
   "t-image": "tdesign-miniprogram/image/image",
   "t-input": "tdesign-miniprogram/input/input",
-  "t-navbar": "tdesign-miniprogram/navbar/navbar"
+  "t-navbar": "tdesign-miniprogram/navbar/navbar",
+  "t-textarea": "tdesign-miniprogram/textarea/textarea"
 }

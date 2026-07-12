@@ -20,6 +20,7 @@ public class WxMiniArticleDetailDTO extends WxMiniArticleDTO {
     private Boolean praised;
     private Boolean collected;
     private Boolean commented;
+    private Boolean followed;
     private Boolean canRead;
     private Integer readType;
     private String sourceType;

@@ -17,6 +17,17 @@ declare module 'weapp-vite/typed-components' {
       readonly shape?: ShapeEnum;
       readonly size?: string;
     };
+    't-badge': {
+      readonly color?: string;
+      readonly content?: string;
+      readonly count?: string | number;
+      readonly dot?: boolean;
+      readonly maxCount?: number;
+      readonly offset?: Array<string | number>;
+      readonly shape?: 'circle' | 'square' | 'bubble' | 'ribbon' | 'ribbon-right' | 'ribbon-left' | 'triangle-right' | 'triangle-left';
+      readonly showZero?: boolean;
+      readonly size?: 'medium' | 'large';
+    };
     't-button': {
       readonly activityType?: number;
       readonly appParameter?: string;
@@ -122,6 +133,36 @@ declare module 'weapp-vite/typed-components' {
       readonly titleMaxLength?: number;
       readonly visible?: boolean;
       readonly zIndex?: number;
+    };
+    't-textarea': {
+      readonly adjustPosition?: boolean;
+      readonly allowInputOverMax?: boolean;
+      readonly autofocus?: boolean;
+      readonly autosize?: boolean | { maxHeight?: number; minHeight?: number; };
+      readonly bordered?: boolean;
+      readonly confirmHold?: boolean;
+      readonly confirmType?: 'return' | 'send' | 'search' | 'next' | 'go' | 'done';
+      readonly cursor?: number;
+      readonly cursorColor?: string;
+      readonly cursorSpacing?: number;
+      readonly defaultValue?: TextareaValue;
+      readonly disabled?: boolean;
+      readonly disableDefaultPadding?: boolean;
+      readonly fixed?: boolean;
+      readonly focus?: boolean;
+      readonly holdKeyboard?: boolean;
+      readonly indicator?: boolean;
+      readonly label?: string;
+      readonly maxcharacter?: number;
+      readonly maxlength?: number;
+      readonly placeholder?: string;
+      readonly placeholderClass?: string;
+      readonly placeholderStyle?: string;
+      readonly readonly?: boolean;
+      readonly selectionEnd?: number;
+      readonly selectionStart?: number;
+      readonly showConfirmBar?: boolean;
+      readonly value?: TextareaValue;
     };
   }
   export type ComponentPropName = keyof ComponentProps;

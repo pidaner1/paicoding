@@ -19,10 +19,12 @@ import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
 import com.github.paicoding.forum.api.model.vo.user.dto.ArticleFootCountDTO;
 import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.UserRelationReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentPageDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniFollowReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniLoginReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniLoginRes;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniProfileReq;
@@ -39,6 +41,7 @@ import com.github.paicoding.forum.service.comment.repository.entity.CommentDO;
 import com.github.paicoding.forum.service.comment.service.CommentReadService;
 import com.github.paicoding.forum.service.comment.service.CommentWriteService;
 import com.github.paicoding.forum.service.user.service.UserFootService;
+import com.github.paicoding.forum.service.user.service.UserRelationService;
 import com.github.paicoding.forum.service.user.service.UserService;
 import com.github.paicoding.forum.web.front.miniprogram.service.WxMiniProgramAuthService;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -76,6 +79,7 @@ public class WxMiniProgramRestController {
     private final CommentReadService commentReadService;
     private final CommentWriteService commentWriteService;
     private final UserFootService userFootService;
+    private final UserRelationService userRelationService;
     private final UserService userService;
 
     public WxMiniProgramRestController(WxMiniProgramAuthService authService,
@@ -84,6 +88,7 @@ public class WxMiniProgramRestController {
                                        CommentReadService commentReadService,
                                        CommentWriteService commentWriteService,
                                        UserFootService userFootService,
+                                       UserRelationService userRelationService,
                                        UserService userService) {
         this.authService = authService;
         this.articleReadService = articleReadService;
@@ -91,6 +96,7 @@ public class WxMiniProgramRestController {
         this.commentReadService = commentReadService;
         this.commentWriteService = commentWriteService;
         this.userFootService = userFootService;
+        this.userRelationService = userRelationService;
         this.userService = userService;
     }
 
@@ -170,7 +176,30 @@ public class WxMiniProgramRestController {
         }
         fillAuthorInfo(article);
         WxMiniArticleDetailDTO detail = toMiniDetail(article);
+        detail.setFollowed(isFollowedByCurrentUser(article.getAuthor(), currentUser));
         return ResVo.ok(detail);
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @PostMapping(path = "users/{authorId}/follow")
+    public ResVo<Boolean> followAuthor(@PathVariable(name = "authorId") Long authorId,
+                                       @RequestBody WxMiniFollowReq req) {
+        if (authorId == null || authorId <= 0 || req == null || req.getFollowed() == null) {
+            return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "关注参数不合法");
+        }
+        Long currentUserId = ReqInfoContext.getReqInfo().getUserId();
+        if (Objects.equals(authorId, currentUserId)) {
+            return ResVo.fail(StatusEnum.FORBID_ERROR_MIXED, "不能关注自己");
+        }
+        if (userService.queryBasicUserInfo(authorId) == null) {
+            return ResVo.fail(StatusEnum.USER_NOT_EXISTS, authorId);
+        }
+
+        UserRelationReq relation = new UserRelationReq();
+        relation.setUserId(authorId);
+        relation.setFollowed(req.getFollowed());
+        userRelationService.saveUserRelation(relation);
+        return ResVo.ok(true);
     }
 
     @GetMapping(path = "search")
@@ -510,6 +539,13 @@ public class WxMiniProgramRestController {
         detail.setSourceType(article.getSourceType());
         detail.setSourceUrl(article.getSourceUrl());
         return detail;
+    }
+
+    private Boolean isFollowedByCurrentUser(Long authorId, Long currentUserId) {
+        if (authorId == null || currentUserId == null || Objects.equals(authorId, currentUserId)) {
+            return false;
+        }
+        return userRelationService.getFollowedUserId(Collections.singletonList(authorId), currentUserId).contains(authorId);
     }
 
     private WxMiniArticleDTO toMiniArticle(ArticleDTO article) {

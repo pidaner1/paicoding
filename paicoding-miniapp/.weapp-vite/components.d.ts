@@ -16,6 +16,8 @@ declare module 'wevu' {
   export interface GlobalComponents {
     TAvatar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar"), WeappComponent<ComponentProp<"t-avatar">>>;
     't-avatar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar"), WeappComponent<ComponentProp<"t-avatar">>>;
+    TBadge: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge"), WeappComponent<ComponentProp<"t-badge">>>;
+    't-badge': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge"), WeappComponent<ComponentProp<"t-badge">>>;
     TButton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button"), WeappComponent<ComponentProp<"t-button">>>;
     't-button': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button"), WeappComponent<ComponentProp<"t-button">>>;
     TIcon: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon"), WeappComponent<ComponentProp<"t-icon">>>;
@@ -26,15 +28,19 @@ declare module 'wevu' {
     't-input': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input"), WeappComponent<ComponentProp<"t-input">>>;
     TNavbar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar"), WeappComponent<ComponentProp<"t-navbar">>>;
     't-navbar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar"), WeappComponent<ComponentProp<"t-navbar">>>;
+    TTextarea: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea"), WeappComponent<ComponentProp<"t-textarea">>>;
+    't-textarea': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea"), WeappComponent<ComponentProp<"t-textarea">>>;
   }
 }
 
 // 用于 TSX 支持
 declare global {
   const TAvatar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar"), WeappComponent<ComponentProp<"t-avatar">>>
+  const TBadge: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge"), WeappComponent<ComponentProp<"t-badge">>>
   const TButton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button"), WeappComponent<ComponentProp<"t-button">>>
   const TIcon: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon"), WeappComponent<ComponentProp<"t-icon">>>
   const TImage: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image/image"), WeappComponent<ComponentProp<"t-image">>>
   const TInput: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input"), WeappComponent<ComponentProp<"t-input">>>
   const TNavbar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar"), WeappComponent<ComponentProp<"t-navbar">>>
+  const TTextarea: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea"), WeappComponent<ComponentProp<"t-textarea">>>
 }

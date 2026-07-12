@@ -2224,6 +2224,54 @@
       ]
     },
     {
+      "name": "t-badge",
+      "description": "自动导入的小程序组件",
+      "attributes": [
+        {
+          "name": "color",
+          "description": "类型: string"
+        },
+        {
+          "name": "content",
+          "description": "类型: string"
+        },
+        {
+          "name": "count",
+          "description": "类型: string | number"
+        },
+        {
+          "name": "dot",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "maxCount",
+          "description": "类型: number"
+        },
+        {
+          "name": "offset",
+          "description": "类型: Array<string | number>"
+        },
+        {
+          "name": "shape",
+          "description": "类型: 'circle' | 'square' | 'bubble' | 'ribbon' | 'ribbon-right' | 'ribbon-left' | 'triangle-right' | 'triangle-left'"
+        },
+        {
+          "name": "showZero",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "size",
+          "description": "类型: 'medium' | 'large'"
+        }
+      ],
+      "references": [
+        {
+          "name": "weapp-vite 自动导入组件",
+          "url": "https://vite.icebreaker.top/guide/auto-import-components.html"
+        }
+      ]
+    },
+    {
       "name": "t-button",
       "description": "自动导入的小程序组件",
       "attributes": [
@@ -2658,6 +2706,130 @@
         {
           "name": "zIndex",
           "description": "类型: number"
+        }
+      ],
+      "references": [
+        {
+          "name": "weapp-vite 自动导入组件",
+          "url": "https://vite.icebreaker.top/guide/auto-import-components.html"
+        }
+      ]
+    },
+    {
+      "name": "t-textarea",
+      "description": "自动导入的小程序组件",
+      "attributes": [
+        {
+          "name": "adjustPosition",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "allowInputOverMax",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "autofocus",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "autosize",
+          "description": "类型: boolean | { maxHeight?: number; minHeight?: number; }"
+        },
+        {
+          "name": "bordered",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "confirmHold",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "confirmType",
+          "description": "类型: 'return' | 'send' | 'search' | 'next' | 'go' | 'done'"
+        },
+        {
+          "name": "cursor",
+          "description": "类型: number"
+        },
+        {
+          "name": "cursorColor",
+          "description": "类型: string"
+        },
+        {
+          "name": "cursorSpacing",
+          "description": "类型: number"
+        },
+        {
+          "name": "defaultValue",
+          "description": "类型: TextareaValue"
+        },
+        {
+          "name": "disabled",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "disableDefaultPadding",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "fixed",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "focus",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "holdKeyboard",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "indicator",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "label",
+          "description": "类型: string"
+        },
+        {
+          "name": "maxcharacter",
+          "description": "类型: number"
+        },
+        {
+          "name": "maxlength",
+          "description": "类型: number"
+        },
+        {
+          "name": "placeholder",
+          "description": "类型: string"
+        },
+        {
+          "name": "placeholderClass",
+          "description": "类型: string"
+        },
+        {
+          "name": "placeholderStyle",
+          "description": "类型: string"
+        },
+        {
+          "name": "readonly",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "selectionEnd",
+          "description": "类型: number"
+        },
+        {
+          "name": "selectionStart",
+          "description": "类型: number"
+        },
+        {
+          "name": "showConfirmBar",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "value",
+          "description": "类型: TextareaValue"
         }
       ],
       "references": [

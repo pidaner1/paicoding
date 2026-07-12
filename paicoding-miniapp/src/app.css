@@ -1,12 +1,11 @@
 @import 'tailwindcss';
 
 @plugin "@iconify/tailwind4" {
-  prefixes: mdi;
+  prefixes: solar;
   icon-selector: '.i-{prefix}-{name}';
 }
 
 @source "./**/*.{wxml,js,ts}";
-
 
 @font-face {
   font-family: 'DingTalk JinBuTi';
@@ -30,17 +29,19 @@ page {
   min-height: 100%;
   background: #f6f7fb;
   color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
   font-size: 28rpx;
   --td-input-prefix-icon-color: #c4c4c7;
-  caret-color: #0BC196;
-  --td-brand-color: #0BC196;
+  caret-color: #0bc196;
+  --td-brand-color: #0bc196;
+  --td-brand-color-active: #43cf7c;
+  --td-brand-color-disabled: #a7e5bf;
+  --td-brand-color-light: #ecfaf1;
 }
 
 .shadow {
   box-shadow: 0px 9px 9px rgba(11, 193, 150, 0.1);
 }
-
 
 view,
 text,
@@ -75,7 +76,7 @@ button::after {
 .primary-button {
   height: 88rpx;
   border-radius: 100rpx;
-  background: linear-gradient(to right, #0BC196, #1CE885);
+  background: linear-gradient(to right, #0bc196, #1ce885);
   box-shadow: 0px 9px 9px rgba(11, 193, 150, 0.25);
   color: #ffffff;
   font-size: 32rpx;

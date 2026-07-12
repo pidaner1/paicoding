@@ -9,7 +9,7 @@ Page({
     article: null,
     currentUserId: null,
     sharePath: '',
-    showBackTop: false,
+    commentSectionVisible: false,
     loading: false,
     comments: [],
     commentsHasMore: false,
@@ -19,11 +19,19 @@ Page({
     commentDeletingId: null,
     commentPraisingId: null,
     replyLoadingTopId: null,
+    commentInputFocus: false,
+    commentCanSubmit: false,
     commentDraft: '',
+    commentDraftLength: 0,
     commentReplyTarget: null,
+    replyDraft: '',
+    replyDraftLength: 0,
+    replyCanSubmit: false,
+    replyInputFocus: false,
     commentError: '',
     praiseSubmitting: false,
     collectSubmitting: false,
+    followSubmitting: false,
     error: ''
   },
 
@@ -44,6 +52,13 @@ Page({
       await this.loadComments(true);
     } catch (err) {
       this.setData({ error: err.message || '加载失败' });
+    }
+  },
+
+  onUnload() {
+    if (this.commentSectionObserver) {
+      this.commentSectionObserver.disconnect();
+      this.commentSectionObserver = null;
     }
   },
 
@@ -132,7 +147,7 @@ Page({
         comments: reset ? list : this.data.comments.concat(list),
         commentsHasMore: !!(res && res.hasMore),
         commentPage: page
-      });
+      }, () => this.observeCommentSection());
     } catch (err) {
       this.setData({ commentError: err.message || '评论加载失败' });
     } finally {
@@ -172,20 +187,32 @@ Page({
     if (!target || !target.hasMoreChild) {
       return;
     }
-    const page = Number(target.childPage || 1) + 1;
+    const pageSize = 20;
+    const loadedChildren = Array.isArray(target.childComments) ? target.childComments : [];
+    const childPage = Number(target.childPage || 1);
+    const page = childPage === 1 && loadedChildren.length < pageSize ? 1 : childPage + 1;
     this.setData({ replyLoadingTopId: topCommentId, commentError: '' });
     try {
       const res = await request({
         url: `/mini/api/articles/${article.articleId}/comments/${topCommentId}/children`,
-        data: { page, size: 10 }
+        data: { page, size: pageSize }
       });
       const children = this.normalizeComments(res && res.list);
       const comments = this.data.comments.map((item) => {
         if (Number(item.commentId || 0) !== topCommentId) {
           return item;
         }
+        const seen = {};
+        const childComments = loadedChildren.concat(children).filter((child) => {
+          const commentId = String(child.commentId || '');
+          if (!commentId || seen[commentId]) {
+            return false;
+          }
+          seen[commentId] = true;
+          return true;
+        });
         return Object.assign({}, item, {
-          childComments: item.childComments.concat(children),
+          childComments,
           hasMoreChild: !!(res && res.hasMore),
           childPage: page
         });
@@ -199,7 +226,51 @@ Page({
   },
 
   onCommentInput(e) {
-    this.setData({ commentDraft: e.detail.value });
+    const value = String((e && e.detail && e.detail.value) || '');
+    this.setData({
+      commentDraft: value,
+      commentDraftLength: value.length,
+      commentCanSubmit: Boolean(value.trim())
+    });
+  },
+
+  onReplyInput(e) {
+    const value = String((e && e.detail && e.detail.value) || '');
+    this.setData({
+      replyDraft: value,
+      replyDraftLength: value.length,
+      replyCanSubmit: Boolean(value.trim())
+    });
+  },
+
+  scrollToComments() {
+    const query = wx.createSelectorQuery();
+    query.select('#comment-section').boundingClientRect();
+    query.selectViewport().scrollOffset();
+    query.exec((res) => {
+      const rect = res && res[0];
+      const viewport = res && res[1];
+      if (!rect) {
+        return;
+      }
+      wx.pageScrollTo({
+        scrollTop: Math.max(0, Number(viewport && viewport.scrollTop || 0) + Number(rect.top || 0) - 24),
+        duration: 240
+      });
+    });
+  },
+
+  observeCommentSection() {
+    if (this.commentSectionObserver || !wx.createIntersectionObserver) {
+      return;
+    }
+    this.commentSectionObserver = wx.createIntersectionObserver(this, { thresholds: [0] });
+    this.commentSectionObserver.relativeToViewport().observe('#comment-section', (res) => {
+      const commentSectionVisible = Boolean(res && res.intersectionRatio > 0);
+      if (commentSectionVisible !== this.data.commentSectionVisible) {
+        this.setData({ commentSectionVisible });
+      }
+    });
   },
 
   startReply(e) {
@@ -214,32 +285,43 @@ Page({
         parentCommentId,
         topCommentId,
         userName: data.name || '技术派用户'
-      }
+      },
+      replyDraft: '',
+      replyDraftLength: 0,
+      replyCanSubmit: false,
+      replyInputFocus: true
     });
   },
 
   cancelReply() {
-    this.setData({ commentReplyTarget: null });
+    this.setData({
+      commentReplyTarget: null,
+      replyDraft: '',
+      replyDraftLength: 0,
+      replyCanSubmit: false,
+      replyInputFocus: false
+    });
   },
 
   async submitComment() {
     const article = this.data.article;
-    const content = String(this.data.commentDraft || '').trim();
+    const replyTarget = this.data.commentReplyTarget;
+    const content = String(replyTarget ? this.data.replyDraft : this.data.commentDraft).trim();
     if (!article || this.data.commentSubmitting) return;
     if (!content) {
       wx.showToast({ title: '请输入评论内容', icon: 'none' });
       return;
     }
-    if (content.length > 1000) {
-      wx.showToast({ title: '评论最多 1000 字', icon: 'none' });
+    if (content.length > 512) {
+      wx.showToast({ title: '评论最多 512 字', icon: 'none' });
       return;
     }
     this.setData({ commentSubmitting: true });
     try {
       const payload = { commentContent: content };
-      if (this.data.commentReplyTarget) {
-        payload.parentCommentId = this.data.commentReplyTarget.parentCommentId;
-        payload.topCommentId = this.data.commentReplyTarget.topCommentId;
+      if (replyTarget) {
+        payload.parentCommentId = replyTarget.parentCommentId;
+        payload.topCommentId = replyTarget.topCommentId;
       }
       const res = await auth.requestWithLogin({
         url: `/mini/api/articles/${article.articleId}/comments`,
@@ -247,16 +329,30 @@ Page({
         data: payload
       });
       const currentUserId = this.getCurrentUserId();
-      const list = this.normalizeComments(res && res.list, currentUserId);
-      this.setData({
+      let list = this.normalizeComments(res && res.list, currentUserId);
+      if (replyTarget) {
+        list = this.mergeCommentsAfterReply(list, replyTarget, res && res.submittedCommentId, content, currentUserId);
+      }
+      const nextData = {
         currentUserId,
         comments: list,
         commentsHasMore: !!(res && res.hasMore),
         commentPage: 1,
-        commentDraft: '',
         commentReplyTarget: null,
+        replyDraft: '',
+        replyDraftLength: 0,
+        replyCanSubmit: false,
+        replyInputFocus: false,
         'article.commentCount': Number(article.commentCount || 0) + 1
-      });
+      };
+      if (replyTarget) {
+        nextData.commentInputFocus = false;
+      } else {
+        nextData.commentDraft = '';
+        nextData.commentDraftLength = 0;
+        nextData.commentCanSubmit = false;
+      }
+      this.setData(nextData);
       wx.showToast({ title: '评论已发布', icon: 'success' });
     } catch (err) {
       wx.showToast({ title: err.message || '发布失败', icon: 'none' });
@@ -276,7 +372,10 @@ Page({
         method: 'POST'
       });
       const currentUserId = this.getCurrentUserId();
-      const list = this.normalizeComments(res && res.list, currentUserId);
+      const list = this.mergeCommentsAfterDelete(
+        this.normalizeComments(res && res.list, currentUserId),
+        commentId
+      );
       this.setData({
         currentUserId,
         comments: list,
@@ -304,7 +403,11 @@ Page({
         method: 'POST'
       });
       const currentUserId = this.getCurrentUserId();
-      const list = this.normalizeComments(res && res.list, currentUserId);
+      const list = this.mergeCommentsAfterPraise(
+        this.normalizeComments(res && res.list, currentUserId),
+        commentId,
+        !praised
+      );
       this.setData({
         currentUserId,
         comments: list,
@@ -364,6 +467,36 @@ Page({
     }
   },
 
+  async toggleFollow() {
+    const article = this.data.article;
+    if (!article || !article.authorId || this.data.followSubmitting) return;
+    this.setData({ followSubmitting: true });
+    try {
+      const user = await auth.ensureLogin({ force: true });
+      const currentUserId = Number(user && user.userId || 0);
+      if (currentUserId === Number(article.authorId)) {
+        this.setData({ currentUserId });
+        wx.showToast({ title: '不能关注自己', icon: 'none' });
+        return;
+      }
+      const followed = !article.followed;
+      await auth.requestWithLogin({
+        url: `/mini/api/users/${article.authorId}/follow`,
+        method: 'POST',
+        data: { followed }
+      });
+      this.setData({
+        currentUserId,
+        'article.followed': followed
+      });
+      wx.showToast({ title: followed ? '已关注' : '已取消关注', icon: 'success' });
+    } catch (err) {
+      wx.showToast({ title: err.message || '操作失败', icon: 'none' });
+    } finally {
+      this.setData({ followSubmitting: false });
+    }
+  },
+
   normalizeArticle(article) {
     const value = article || {};
     const sourceUrl = value.sourceUrl || '';
@@ -373,6 +506,7 @@ Page({
     value.praiseCount = Number(value.praiseCount || 0);
     value.collectionCount = Number(value.collectionCount || 0);
     value.commentCount = Number(value.commentCount || 0);
+    value.followed = Boolean(value.followed);
     value.sourceHost = this.extractHost(sourceUrl);
     value.canRead = value.canRead !== false;
     value.createTime = formatDate(value.createTime);
@@ -388,6 +522,116 @@ Page({
   normalizeComments(comments, currentUserId) {
     const userId = currentUserId == null ? this.data.currentUserId : currentUserId;
     return Array.isArray(comments) ? comments.map((item) => this.normalizeComment(item, userId)) : [];
+  },
+
+  mergeCommentsAfterDelete(latestComments, deletedCommentId) {
+    const previousComments = this.data.comments || [];
+    const previousById = {};
+    previousComments.forEach((comment) => {
+      previousById[String(comment.commentId)] = comment;
+    });
+    return latestComments.map((comment) => {
+      const previous = previousById[String(comment.commentId)];
+      if (!previous) {
+        return comment;
+      }
+      const seen = {};
+      const childComments = [];
+      previous.childComments.concat(comment.childComments).forEach((child) => {
+        const childId = Number(child.commentId || 0);
+        if (!childId || childId === deletedCommentId || seen[childId]) {
+          return;
+        }
+        seen[childId] = true;
+        childComments.push(child);
+      });
+      comment.childComments = childComments;
+      comment.childPage = previous.childPage || 1;
+      comment.hasMoreChild = Number(comment.childCommentCount || 0) > childComments.length;
+      return comment;
+    });
+  },
+
+  mergeCommentsAfterReply(latestComments, replyTarget, submittedCommentId, content, currentUserId) {
+    const previous = (this.data.comments || []).find((comment) => Number(comment.commentId) === Number(replyTarget.topCommentId));
+    if (!previous) {
+      return latestComments;
+    }
+    const currentUser = auth.getStoredUser();
+    const submittedReply = submittedCommentId ? {
+      commentId: Number(submittedCommentId),
+      userId: currentUserId,
+      userName: currentUser.nickName || '我',
+      userPhoto: currentUser.avatarUrl || '',
+      userInitial: (currentUser.nickName || '我').slice(0, 1),
+      commentTimeStr: '刚刚',
+      commentContent: content,
+      praiseCount: 0,
+      praised: false,
+      canDelete: true,
+      childComments: []
+    } : null;
+    return latestComments.map((comment) => {
+      if (Number(comment.commentId) !== Number(replyTarget.topCommentId)) {
+        return comment;
+      }
+      const seen = {};
+      const childComments = previous.childComments.concat(comment.childComments, submittedReply || []).filter((child) => {
+        const childId = Number(child.commentId || 0);
+        if (!childId || seen[childId]) {
+          return false;
+        }
+        seen[childId] = true;
+        return true;
+      });
+      comment.childComments = childComments;
+      comment.childPage = previous.childPage || 1;
+      comment.hasMoreChild = Number(comment.childCommentCount || 0) > childComments.length;
+      return comment;
+    });
+  },
+
+  mergeCommentsAfterPraise(latestComments, commentId, praised) {
+    const previousComments = this.data.comments || [];
+    const previousById = {};
+    previousComments.forEach((comment) => {
+      previousById[String(comment.commentId)] = comment;
+    });
+    return latestComments.map((comment) => {
+      const previous = previousById[String(comment.commentId)];
+      if (!previous) {
+        return comment;
+      }
+      const latestChildrenById = {};
+      comment.childComments.forEach((child) => {
+        latestChildrenById[String(child.commentId)] = child;
+      });
+      const seen = {};
+      const childComments = previous.childComments.concat(comment.childComments).filter((child) => {
+        const childId = String(child.commentId || '');
+        if (!childId || seen[childId]) {
+          return false;
+        }
+        seen[childId] = true;
+        return true;
+      }).map((child) => latestChildrenById[String(child.commentId)] || child);
+      if (Number(comment.commentId) === commentId) {
+        const previousCount = Number(previous.praiseCount || 0);
+        comment.praised = praised;
+        comment.praiseCount = Math.max(0, previousCount + (praised ? 1 : -1));
+      }
+      childComments.forEach((child) => {
+        if (Number(child.commentId) === commentId) {
+          const previousChild = previous.childComments.find((item) => Number(item.commentId) === commentId) || child;
+          child.praised = praised;
+          child.praiseCount = Math.max(0, Number(previousChild.praiseCount || 0) + (praised ? 1 : -1));
+        }
+      });
+      comment.childComments = childComments;
+      comment.childPage = previous.childPage || 1;
+      comment.hasMoreChild = Number(comment.childCommentCount || 0) > childComments.length;
+      return comment;
+    });
   },
 
   normalizeComment(comment, currentUserId) {
@@ -466,13 +710,6 @@ Page({
       scrollTop: 0,
       duration: 220
     });
-  },
-
-  onPageScroll(e) {
-    const next = Number(e && e.scrollTop) > 640;
-    if (next !== this.data.showBackTop) {
-      this.setData({ showBackTop: next });
-    }
   },
 
   onShareAppMessage() {

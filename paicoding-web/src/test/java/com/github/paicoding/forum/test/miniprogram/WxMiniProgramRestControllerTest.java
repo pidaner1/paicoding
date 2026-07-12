@@ -13,10 +13,12 @@ import com.github.paicoding.forum.api.model.vo.comment.dto.SubCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.dto.TopCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
+import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentPageDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniFollowReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniSearchHintDTO;
 import com.github.paicoding.forum.service.article.repository.entity.ArticleDO;
 import com.github.paicoding.forum.service.article.service.ArticleReadService;
@@ -25,6 +27,7 @@ import com.github.paicoding.forum.service.comment.repository.entity.CommentDO;
 import com.github.paicoding.forum.service.comment.service.CommentReadService;
 import com.github.paicoding.forum.service.comment.service.CommentWriteService;
 import com.github.paicoding.forum.service.user.service.UserFootService;
+import com.github.paicoding.forum.service.user.service.UserRelationService;
 import com.github.paicoding.forum.service.user.service.UserService;
 import com.github.paicoding.forum.web.front.miniprogram.rest.WxMiniProgramRestController;
 import com.github.paicoding.forum.web.front.miniprogram.service.WxMiniProgramAuthService;
@@ -146,6 +149,65 @@ public class WxMiniProgramRestControllerTest {
                 .articleDetail(404L);
 
         assertEquals(StatusEnum.ARTICLE_NOT_EXISTS.getCode(), res.getStatus().getCode());
+    }
+
+    @Test
+    public void shouldReturnFollowStateForLoggedInReader() {
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        ArticleDTO article = new ArticleDTO();
+        article.setArticleId(201L);
+        article.setAuthor(301L);
+        article.setTitle("小程序关注");
+        article.setContent("正文");
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(401L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        when(articleReadService.queryFullArticleInfo(201L, 401L)).thenReturn(article);
+        when(userRelationService.getFollowedUserId(Collections.singletonList(301L), 401L)).thenReturn(Collections.singleton(301L));
+
+        ResVo<WxMiniArticleDetailDTO> res = newController(articleReadService, mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .articleDetail(201L);
+
+        assertTrue(res.getResult().getFollowed());
+    }
+
+    @Test
+    public void shouldSaveRequestedFollowState() {
+        UserService userService = mock(UserService.class);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(401L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        when(userService.queryBasicUserInfo(301L)).thenReturn(new BaseUserInfoDTO().setUserId(301L));
+
+        WxMiniFollowReq followReq = new WxMiniFollowReq();
+        followReq.setFollowed(true);
+        ResVo<Boolean> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, userService)
+                .followAuthor(301L, followReq);
+
+        assertTrue(res.getResult());
+        verify(userRelationService).saveUserRelation(argThat(relation -> relation.getUserId().equals(301L) && relation.getFollowed()));
+    }
+
+    @Test
+    public void shouldRejectFollowingCurrentUser() {
+        UserService userService = mock(UserService.class);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(301L);
+        ReqInfoContext.addReqInfo(reqInfo);
+
+        WxMiniFollowReq followReq = new WxMiniFollowReq();
+        followReq.setFollowed(true);
+        ResVo<Boolean> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, userService)
+                .followAuthor(301L, followReq);
+
+        assertEquals(StatusEnum.FORBID_ERROR_MIXED.getCode(), res.getStatus().getCode());
+        verifyNoInteractions(userService, userRelationService);
     }
 
     @Test
@@ -766,11 +828,21 @@ public class WxMiniProgramRestControllerTest {
     }
 
     private WxMiniProgramRestController newController(ArticleReadService articleReadService,
-                                                      CategoryService categoryService,
-                                                      CommentReadService commentReadService,
-                                                      CommentWriteService commentWriteService,
-                                                      UserFootService userFootService,
-                                                      UserService userService) {
+                                                       CategoryService categoryService,
+                                                       CommentReadService commentReadService,
+                                                       CommentWriteService commentWriteService,
+                                                       UserFootService userFootService,
+                                                       UserService userService) {
+        return newController(articleReadService, categoryService, commentReadService, commentWriteService, userFootService, mock(UserRelationService.class), userService);
+    }
+
+    private WxMiniProgramRestController newController(ArticleReadService articleReadService,
+                                                       CategoryService categoryService,
+                                                       CommentReadService commentReadService,
+                                                       CommentWriteService commentWriteService,
+                                                       UserFootService userFootService,
+                                                       UserRelationService userRelationService,
+                                                       UserService userService) {
         return new WxMiniProgramRestController(
                 mock(WxMiniProgramAuthService.class),
                 articleReadService,
@@ -778,6 +850,7 @@ public class WxMiniProgramRestControllerTest {
                 commentReadService,
                 commentWriteService,
                 userFootService,
+                userRelationService,
                 userService);
     }
 }
