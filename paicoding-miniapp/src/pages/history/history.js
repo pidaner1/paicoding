@@ -68,12 +68,6 @@ Page({
     return this.loadHistory(false);
   },
 
-  openDetail(e) {
-    wx.navigateTo({
-      url: `/pages/detail/detail?id=${e.currentTarget.dataset.id}`
-    });
-  },
-
   retry() {
     return this.loadHistory(true);
   }
