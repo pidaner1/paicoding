@@ -1,10 +1,10 @@
 <view class="profile-container">
-  <image src="/static/images/bg.png" class="bg" mode="widthFix" />
+  <image src="/assets/images/bg.png" class="bg" mode="widthFix" />
 
   <t-navbar class="navbar" />
 
   <view class="base-info">
-    <t-avatar image="{{ '/static/images/avatar.png' }}" class="avatar" size="80px" />
+    <t-avatar image="{{ '/assets/images/avatar.png' }}" class="avatar" size="80px" />
     <view class="info">
       <view class="nick-name-wrapper">
         <text class="nick-name">{{nickName}}</text>
@@ -34,51 +34,51 @@
 
   <view class="card">
     <view class="flex-col-ic">
-      <image src="/static/images/article.png" class="icon" />
+      <image src="/assets/images/article.png" class="icon" />
       <text class="label">我的文章</text>
     </view>
     <view class="flex-col-ic">
-      <image src="/static/images/favorite.png" class="icon" />
+      <image src="/assets/images/favorite.png" class="icon" />
       <text class="label">我的关注</text>
     </view>
     <view class="flex-col-ic">
-      <image src="/static/images/collect.png" class="icon" />
+      <image src="/assets/images/collect.png" class="icon" />
       <text class="label">我的收藏</text>
     </view>
     <view class="flex-col-ic">
-      <image src="/static/images/history.png" class="icon" />
+      <image src="/assets/images/history.png" class="icon" />
       <text class="label">浏览历史</text>
     </view>
   </view>
 
   <view class="list">
     <view class="row">
-      <image src="/static/images/published.png" class="icon" />
+      <image src="/assets/images/published.png" class="icon" />
       <text class="label">已发布文章</text>
       <text class="value">10<text class="unit">篇</text></text>
     </view>
 
     <view class="row">
-      <image src="/static/images/favorite-outline.png" class="icon" />
+      <image src="/assets/images/favorite-outline.png" class="icon" />
       <text class="label">文章被点赞</text>
       <text class="value">10<text class="unit">次</text></text>
     </view>
 
     <view class="row">
-      <image src="/static/images/read.png" class="icon" />
+      <image src="/assets/images/read.png" class="icon" />
       <text class="label">文章被阅读</text>
       <text class="value">10<text class="unit">次</text></text>
     </view>
 
     <view class="row">
-      <image src="/static/images/collect-outline.png" class="icon" />
+      <image src="/assets/images/collect-outline.png" class="icon" />
       <text class="label">文章被收藏</text>
       <text class="value">10<text class="unit">篇</text></text>
     </view>
   </view>
 
   <view class="logout-btn">
-    <image src="/static/images/logout.png" class="icon" />
+    <image src="/assets/images/logout.png" class="icon" />
     <text>退出登录</text>
   </view>
 </view>

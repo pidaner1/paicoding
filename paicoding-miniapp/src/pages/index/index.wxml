@@ -25,42 +25,7 @@
     <button class="primary-button retry-button" bindtap="retry">重试</button>
   </view>
   <view wx:elif="{{articles.length === 0 && !loading}}" class="empty panel">暂无文章</view>
-  <view wx:for="{{articles}}" wx:key="articleId" class="article-card" bindtap="openDetail" data-id="{{item.articleId}}">
-    <view class="title">{{item.title}}</view>
-    <view class="article-body">
-      <view class="summary-wrapper">
-        <view class="avatar-wrapper">
-          <image src="{{item.authorAvatar}}" class="avatar" />
-          <text>{{item.authorName}}</text>
-        </view>
-
-        <view class="summary">{{item.summary}}</view>
-      </view>
-
-      <image wx:if="{{item.cover}}" class="cover" src="{{item.cover}}" mode="aspectFill"></image>
-    </view>
-    <view class="footer">
-      <view class="meta">
-        <view class="flex-ic">
-          <image src="/assets/images/article-read.png" class="icon" />
-          <text class="value">{{item.readCount}}</text>
-        </view>
-
-        <view class="flex-ic">
-          <image src="/assets/images/article-praise.png" class="icon" />
-          <text class="value">{{item.praiseCount}}</text>
-        </view>
-
-        <view class="flex-ic">
-          <image src="/assets/images/article-comment.png" class="icon" />
-          <text class="value">{{item.commentCount}}</text>
-        </view>
-      </view>
-      <view class="tags">
-        <view wx:for="{{item.tags}}" wx:for-item="child" wx:key="child" class="tag">{{child}}</view>
-      </view>
-    </view>
-  </view>
+  <article-card wx:for="{{articles}}" wx:key="articleId" article="{{item}}" />
   <view wx:if="{{articles.length > 0}}" class="load-state muted">{{loading ? '加载中' : (hasMore ? '上拉加载更多' : '没有更多了')}}
   </view>
 </scroll-view>

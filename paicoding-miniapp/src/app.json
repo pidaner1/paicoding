@@ -9,6 +9,9 @@
     "pages/collection/collection",
     "pages/history/history"
   ],
+  "usingComponents": {
+    "article-card": "/components/article-card/index"
+  },
   "window": {
     "navigationBarTitleText": "技术派",
     "navigationBarBackgroundColor": "#fff",

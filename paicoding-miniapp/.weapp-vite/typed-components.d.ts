@@ -6,6 +6,9 @@
 // 由 weapp-vite 自动生成，请勿编辑。
 declare module 'weapp-vite/typed-components' {
   export interface ComponentProps {
+    'article-card': {
+      readonly article?: Record<string, any>;
+    };
     't-avatar': {
       readonly alt?: string;
       readonly badgeProps?: BadgeProps;

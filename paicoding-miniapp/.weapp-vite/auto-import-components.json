@@ -1,4 +1,5 @@
 {
+  "article-card": "/components/article-card/index",
   "t-avatar": "tdesign-miniprogram/avatar/avatar",
   "t-badge": "tdesign-miniprogram/badge/badge",
   "t-button": "tdesign-miniprogram/button/button",

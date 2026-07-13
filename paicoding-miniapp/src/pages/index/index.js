@@ -159,12 +159,6 @@ Page({
     });
   },
 
-  openDetail(e) {
-    wx.navigateTo({
-      url: `/pages/detail/detail?id=${e.currentTarget.dataset.id}`
-    });
-  },
-
   onShareAppMessage() {
     return {
       title: '技术派 - Java 与 AI 实战社区',

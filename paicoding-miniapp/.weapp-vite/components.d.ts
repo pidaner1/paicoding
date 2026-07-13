@@ -14,6 +14,8 @@ type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fa
 
 declare module 'wevu' {
   export interface GlobalComponents {
+    ArticleCard: __WeappComponentImport<typeof import("../src/components/article-card/index"), WeappComponent<ComponentProp<"article-card">>>;
+    'article-card': __WeappComponentImport<typeof import("../src/components/article-card/index"), WeappComponent<ComponentProp<"article-card">>>;
     TAvatar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar"), WeappComponent<ComponentProp<"t-avatar">>>;
     't-avatar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar"), WeappComponent<ComponentProp<"t-avatar">>>;
     TBadge: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge"), WeappComponent<ComponentProp<"t-badge">>>;
@@ -35,6 +37,7 @@ declare module 'wevu' {
 
 // 用于 TSX 支持
 declare global {
+  const ArticleCard: __WeappComponentImport<typeof import("../src/components/article-card/index"), WeappComponent<ComponentProp<"article-card">>>
   const TAvatar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar"), WeappComponent<ComponentProp<"t-avatar">>>
   const TBadge: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge"), WeappComponent<ComponentProp<"t-badge">>>
   const TButton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button"), WeappComponent<ComponentProp<"t-button">>>
