@@ -17,9 +17,10 @@ import com.github.paicoding.forum.api.model.vo.comment.dto.SubCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.dto.TopCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
+import com.github.paicoding.forum.api.model.vo.user.UserRelationReq;
 import com.github.paicoding.forum.api.model.vo.user.dto.ArticleFootCountDTO;
 import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
-import com.github.paicoding.forum.api.model.vo.user.UserRelationReq;
+import com.github.paicoding.forum.api.model.vo.user.dto.UserStatisticInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentDTO;
@@ -30,6 +31,7 @@ import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniLoginRes;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniProfileReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniSearchHintDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniUserDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniUserStatisticsDTO;
 import com.github.paicoding.forum.core.mdc.MdcDot;
 import com.github.paicoding.forum.core.permission.Permission;
 import com.github.paicoding.forum.core.permission.UserRole;
@@ -116,6 +118,14 @@ public class WxMiniProgramRestController {
     @GetMapping(path = "user/me")
     public ResVo<WxMiniUserDTO> currentUser() {
         return ResVo.ok(authService.currentUser());
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @GetMapping(path = "user/statistics")
+    public ResVo<WxMiniUserStatisticsDTO> currentUserStatistics() {
+        Long currentUser = ReqInfoContext.getReqInfo().getUserId();
+        UserStatisticInfoDTO statistics = userService.queryUserInfoWithStatistic(currentUser);
+        return ResVo.ok(toMiniUserStatistics(statistics));
     }
 
     @Permission(role = UserRole.LOGIN)
@@ -570,6 +580,24 @@ public class WxMiniProgramRestController {
                 .setCreateTime(article.getCreateTime())
                 .setLastUpdateTime(article.getLastUpdateTime())
                 .setSearchHit(article.getSearchHit());
+    }
+
+    private WxMiniUserStatisticsDTO toMiniUserStatistics(UserStatisticInfoDTO statistics) {
+        if (statistics == null) {
+            return new WxMiniUserStatisticsDTO();
+        }
+        return new WxMiniUserStatisticsDTO()
+                .setJoinDayCount(valueOrZero(statistics.getJoinDayCount()))
+                .setFollowCount(valueOrZero(statistics.getFollowCount()))
+                .setFansCount(valueOrZero(statistics.getFansCount()))
+                .setArticleCount(valueOrZero(statistics.getArticleCount()))
+                .setPraiseCount(valueOrZero(statistics.getPraiseCount()))
+                .setReadCount(valueOrZero(statistics.getReadCount()))
+                .setCollectionCount(valueOrZero(statistics.getCollectionCount()));
+    }
+
+    private Integer valueOrZero(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private void fillAuthorInfo(ArticleDTO article) {

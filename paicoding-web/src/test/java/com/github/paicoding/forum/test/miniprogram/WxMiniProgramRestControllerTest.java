@@ -14,12 +14,14 @@ import com.github.paicoding.forum.api.model.vo.comment.dto.TopCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
 import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.UserStatisticInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentPageDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniFollowReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniSearchHintDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniUserStatisticsDTO;
 import com.github.paicoding.forum.service.article.repository.entity.ArticleDO;
 import com.github.paicoding.forum.service.article.service.ArticleReadService;
 import com.github.paicoding.forum.service.article.service.CategoryService;
@@ -149,6 +151,37 @@ public class WxMiniProgramRestControllerTest {
                 .articleDetail(404L);
 
         assertEquals(StatusEnum.ARTICLE_NOT_EXISTS.getCode(), res.getStatus().getCode());
+    }
+
+    @Test
+    public void shouldReturnCurrentUserStatistics() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+
+        UserStatisticInfoDTO source = new UserStatisticInfoDTO();
+        source.setJoinDayCount(120);
+        source.setFollowCount(12);
+        source.setFansCount(34);
+        source.setArticleCount(5);
+        source.setPraiseCount(67);
+        source.setReadCount(890);
+        source.setCollectionCount(null);
+        UserService userService = mock(UserService.class);
+        when(userService.queryUserInfoWithStatistic(88L)).thenReturn(source);
+
+        ResVo<WxMiniUserStatisticsDTO> res = newController(
+                mock(ArticleReadService.class), mock(CategoryService.class), userService)
+                .currentUserStatistics();
+
+        assertEquals(Integer.valueOf(120), res.getResult().getJoinDayCount());
+        assertEquals(Integer.valueOf(12), res.getResult().getFollowCount());
+        assertEquals(Integer.valueOf(34), res.getResult().getFansCount());
+        assertEquals(Integer.valueOf(5), res.getResult().getArticleCount());
+        assertEquals(Integer.valueOf(67), res.getResult().getPraiseCount());
+        assertEquals(Integer.valueOf(890), res.getResult().getReadCount());
+        assertEquals(Integer.valueOf(0), res.getResult().getCollectionCount());
+        verify(userService).queryUserInfoWithStatistic(88L);
     }
 
     @Test

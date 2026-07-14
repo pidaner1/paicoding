@@ -2,13 +2,16 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
-const DETAIL_MODULE = path.join(ROOT, 'paicoding-miniapp/pages/detail/detail.js');
-const AUTH_MODULE = path.join(ROOT, 'paicoding-miniapp/utils/auth.js');
-const REQUEST_MODULE = path.join(ROOT, 'paicoding-miniapp/utils/request.js');
-const CONFIG_MODULE = path.join(ROOT, 'paicoding-miniapp/utils/config.js');
+const DETAIL_MODULE = path.join(ROOT, 'paicoding-miniapp/src/pages/detail/detail.js');
+const AUTH_MODULE = path.join(ROOT, 'paicoding-miniapp/src/utils/auth.js');
+const REQUEST_MODULE = path.join(ROOT, 'paicoding-miniapp/src/utils/request.js');
+const CONFIG_MODULE = path.join(ROOT, 'paicoding-miniapp/src/utils/config.js');
+const moduleCache = new Map();
 
 function ok(result) {
   return {
@@ -41,9 +44,30 @@ function applyPath(target, pathKey, value) {
 }
 
 function clearModules() {
-  [DETAIL_MODULE, AUTH_MODULE, REQUEST_MODULE, CONFIG_MODULE].forEach((mod) => {
-    delete require.cache[mod];
+  moduleCache.clear();
+}
+
+function loadCommonJs(modulePath) {
+  const resolvedPath = path.resolve(modulePath);
+  if (moduleCache.has(resolvedPath)) {
+    return moduleCache.get(resolvedPath).exports;
+  }
+  const module = { exports: {} };
+  moduleCache.set(resolvedPath, module);
+  const source = fs.readFileSync(resolvedPath, 'utf8');
+  const moduleDir = path.dirname(resolvedPath);
+  const localRequire = (request) => {
+    if (!request.startsWith('.')) {
+      return require(request);
+    }
+    const targetPath = path.resolve(moduleDir, request);
+    return loadCommonJs(path.extname(targetPath) ? targetPath : `${targetPath}.js`);
+  };
+  const factory = vm.runInThisContext(`(function(require, module, exports, __filename, __dirname) {\n${source}\n})`, {
+    filename: resolvedPath
   });
+  factory(localRequire, module, module.exports, resolvedPath, moduleDir);
+  return module.exports;
 }
 
 function createHarness() {
@@ -53,6 +77,7 @@ function createHarness() {
   const toastCalls = [];
   const previewCalls = [];
   const stopPullDownCalls = [];
+  let commentSectionObserver = null;
   let loginCalls = 0;
   let pageDefinition = null;
 
@@ -94,18 +119,34 @@ function createHarness() {
     },
     stopPullDownRefresh() {
       stopPullDownCalls.push(true);
+    },
+    createIntersectionObserver() {
+      return {
+        relativeToViewport() {
+          return this;
+        },
+        observe(selector, callback) {
+          if (selector === '#comment-section') {
+            commentSectionObserver = callback;
+          }
+        },
+        disconnect() {}
+      };
     }
   };
 
   clearModules();
-  require(DETAIL_MODULE);
+  loadCommonJs(DETAIL_MODULE);
 
   const page = {
     data: clone(pageDefinition.data),
-    setData(patch) {
+    setData(patch, callback) {
       Object.keys(patch).forEach((key) => {
         applyPath(this.data, key, patch[key]);
       });
+      if (typeof callback === 'function') {
+        callback();
+      }
     }
   };
 
@@ -123,6 +164,11 @@ function createHarness() {
     toastCalls,
     previewCalls,
     stopPullDownCalls,
+    triggerCommentSection(intersectionRatio) {
+      if (commentSectionObserver) {
+        commentSectionObserver({ intersectionRatio });
+      }
+    },
     get loginCalls() {
       return loginCalls;
     }
@@ -273,6 +319,41 @@ async function testCollectRequiresLoginAndRefreshesDetail() {
   assert.strictEqual(h.page.data.article.collectionCount, 1);
 }
 
+async function testFollowAndUnfollowAuthorRequireLogin() {
+  const h = createHarness();
+  h.requestQueue.push(
+    ok({
+      articleId: 118,
+      authorId: 8,
+      title: '关注作者',
+      followed: false
+    }),
+    ok({ list: [], hasMore: false }),
+    ok({ token: 'follow-token', user: { userId: 9, nickName: 'follow-user' } }),
+    ok({ userId: 9, nickName: 'follow-user' }),
+    ok({ done: true }),
+    ok({ userId: 9, nickName: 'follow-user' }),
+    ok({ userId: 9, nickName: 'follow-user' }),
+    ok({ done: true })
+  );
+
+  await h.page.onLoad({ id: '118', from: 'ai-skill' });
+  await h.page.toggleFollow();
+
+  assert.strictEqual(h.loginCalls, 1);
+  assert.strictEqual(h.requestCalls[4].url.endsWith('/mini/api/users/8/follow'), true);
+  assert.strictEqual(h.requestCalls[4].method, 'POST');
+  assert.deepStrictEqual(h.requestCalls[4].data, { followed: true });
+  assert.strictEqual(h.requestCalls[4].header.Authorization, 'Bearer follow-token');
+  assert.strictEqual(h.page.data.article.followed, true);
+
+  await h.page.toggleFollow();
+
+  assert.strictEqual(h.requestCalls[7].url.endsWith('/mini/api/users/8/follow'), true);
+  assert.deepStrictEqual(h.requestCalls[7].data, { followed: false });
+  assert.strictEqual(h.page.data.article.followed, false);
+}
+
 async function testPraiseDoubleTapDoesNotSubmitTwice() {
   const h = createHarness();
   h.requestQueue.push(
@@ -306,6 +387,22 @@ async function testPraiseDoubleTapDoesNotSubmitTwice() {
   assert.strictEqual(favorCalls.length, 1);
   assert.strictEqual(h.page.data.article.praised, true);
   assert.strictEqual(h.page.data.article.praiseCount, 1);
+}
+
+async function testBottomActionSwitchesAtCommentSection() {
+  const h = createHarness();
+  h.requestQueue.push(
+    ok({ articleId: 116, title: '底栏切换' }),
+    ok({ list: [], hasMore: false })
+  );
+
+  await h.page.onLoad({ id: '116', from: 'ai-skill' });
+
+  assert.strictEqual(h.page.data.commentSectionVisible, false);
+  h.triggerCommentSection(1);
+  assert.strictEqual(h.page.data.commentSectionVisible, true);
+  h.triggerCommentSection(0);
+  assert.strictEqual(h.page.data.commentSectionVisible, false);
 }
 
 async function testArticleImagesCanPreview() {
@@ -394,6 +491,7 @@ async function testLoadMoreRepliesAppendsChildren() {
     }),
     ok({
       list: [
+        { commentId: 21, userId: 9, userName: '读者A', commentContent: '已加载回复' },
         { commentId: 22, userId: 8, userName: 'reader', commentContent: '第二页回复' },
         { commentId: 23, userId: 10, userName: '读者B', commentContent: '继续讨论' }
       ],
@@ -405,13 +503,13 @@ async function testLoadMoreRepliesAppendsChildren() {
   await h.page.loadMoreReplies({ currentTarget: { dataset: { top: '20' } } });
 
   assert.strictEqual(h.requestCalls[2].url.endsWith('/mini/api/articles/113/comments/20/children'), true);
-  assert.strictEqual(h.requestCalls[2].data.page, 2);
-  assert.strictEqual(h.requestCalls[2].data.size, 10);
+  assert.strictEqual(h.requestCalls[2].data.page, 1);
+  assert.strictEqual(h.requestCalls[2].data.size, 20);
   assert.strictEqual(h.page.data.comments[0].childComments.length, 3);
   assert.strictEqual(h.page.data.comments[0].childComments[1].commentId, 22);
   assert.strictEqual(h.page.data.comments[0].childComments[1].canDelete, true);
   assert.strictEqual(h.page.data.comments[0].hasMoreChild, false);
-  assert.strictEqual(h.page.data.comments[0].childPage, 2);
+  assert.strictEqual(h.page.data.comments[0].childPage, 1);
 }
 
 async function testPullDownRefreshReloadsDetailAndComments() {
@@ -506,18 +604,17 @@ async function testReplyCommentSubmitsParentAndTopCommentIds() {
         commentId: 10,
         userName: '王二',
         commentContent: '一级评论',
-        childComments: [
-          { commentId: 12, userName: '读者', commentContent: '子回复' },
-          { commentId: 13, userName: 'reply-user', commentContent: '同意' }
-        ]
+        childCommentCount: 2,
+        childComments: [{ commentId: 12, userName: '读者', commentContent: '子回复' }]
       }],
-      hasMore: false
+      hasMore: false,
+      submittedCommentId: 13
     })
   );
 
   await h.page.onLoad({ id: '110', from: 'ai-skill' });
   h.page.startReply({ currentTarget: { dataset: { id: '12', top: '10', name: '读者' } } });
-  h.page.onCommentInput({ detail: { value: ' 同意 ' } });
+  h.page.onReplyInput({ detail: { value: ' 同意 ' } });
   await h.page.submitComment();
 
   assert.deepStrictEqual(h.requestCalls[3].data, {
@@ -531,6 +628,27 @@ async function testReplyCommentSubmitsParentAndTopCommentIds() {
   assert.strictEqual(h.page.data.article.commentCount, 2);
 }
 
+async function testInlineReplyKeepsTopLevelDraftAndClosesOnCancel() {
+  const h = createHarness();
+  h.page.onCommentInput({ detail: { value: '顶部草稿' } });
+
+  h.page.startReply({ currentTarget: { dataset: { id: '15', top: '10', name: '读者A' } } });
+  h.page.onReplyInput({ detail: { value: '回复草稿' } });
+
+  assert.strictEqual(h.page.data.commentDraft, '顶部草稿');
+  assert.strictEqual(h.page.data.commentReplyTarget.parentCommentId, 15);
+  assert.strictEqual(h.page.data.commentReplyTarget.topCommentId, 10);
+  assert.strictEqual(h.page.data.replyDraft, '回复草稿');
+  assert.strictEqual(h.page.data.replyCanSubmit, true);
+
+  h.page.cancelReply();
+
+  assert.strictEqual(h.page.data.commentDraft, '顶部草稿');
+  assert.strictEqual(h.page.data.commentReplyTarget, null);
+  assert.strictEqual(h.page.data.replyDraft, '');
+  assert.strictEqual(h.page.data.replyCanSubmit, false);
+}
+
 async function testDeleteOwnCommentRequiresLoginAndRefreshesList() {
   const h = createHarness();
   h.storage.PAICODING_TOKEN = 'delete-token';
@@ -539,7 +657,7 @@ async function testDeleteOwnCommentRequiresLoginAndRefreshesList() {
     article: {
       articleId: 111,
       title: '删除评论',
-      commentCount: 2
+      commentCount: 3
     },
     currentUserId: 6,
     comments: [{
@@ -547,7 +665,13 @@ async function testDeleteOwnCommentRequiresLoginAndRefreshesList() {
       userId: 7,
       userName: '王二',
       commentContent: '一级评论',
-      childComments: [{ commentId: 13, userId: 6, userName: 'reply-user', commentContent: '同意', canDelete: true }]
+      childCommentCount: 3,
+      childPage: 1,
+      childComments: [
+        { commentId: 13, userId: 6, userName: 'reply-user', commentContent: '同意', canDelete: true },
+        { commentId: 14, userId: 7, userName: '王二', commentContent: '保留回复' },
+        { commentId: 15, userId: 8, userName: '读者', commentContent: '已展开回复' }
+      ]
     }]
   });
   h.requestQueue.push(
@@ -558,7 +682,9 @@ async function testDeleteOwnCommentRequiresLoginAndRefreshesList() {
         userId: 7,
         userName: '王二',
         commentContent: '一级评论',
-        childComments: []
+        childCommentCount: 2,
+        hasMoreChild: true,
+        childComments: [{ commentId: 14, userId: 7, userName: '王二', commentContent: '保留回复' }]
       }],
       hasMore: false
     })
@@ -571,8 +697,10 @@ async function testDeleteOwnCommentRequiresLoginAndRefreshesList() {
   assert.strictEqual(h.requestCalls[1].url.endsWith('/mini/api/articles/111/comments/13/delete'), true);
   assert.strictEqual(h.requestCalls[1].method, 'POST');
   assert.strictEqual(h.requestCalls[1].header.Authorization, 'Bearer delete-token');
-  assert.strictEqual(h.page.data.comments[0].childComments.length, 0);
-  assert.strictEqual(h.page.data.article.commentCount, 1);
+  assert.strictEqual(h.page.data.comments[0].childComments.length, 2);
+  assert.deepStrictEqual(h.page.data.comments[0].childComments.map((item) => item.commentId), [14, 15]);
+  assert.strictEqual(h.page.data.comments[0].hasMoreChild, false);
+  assert.strictEqual(h.page.data.article.commentCount, 2);
   assert.strictEqual(h.toastCalls[h.toastCalls.length - 1].title, '评论已删除');
 }
 
@@ -588,26 +716,36 @@ async function testToggleCommentPraiseRequiresLoginAndRefreshesList() {
     },
     currentUserId: 6,
     comments: [{
-      commentId: 14,
+      commentId: 10,
       userId: 7,
       userName: '王二',
       commentContent: '一级评论',
-      praised: false,
-      praiseCount: 0,
-      childComments: []
+      childCommentCount: 2,
+      childPage: 1,
+      childComments: [
+        { commentId: 14, userId: 7, userName: '王二', commentContent: '第一条回复', praised: false, praiseCount: 0 },
+        { commentId: 15, userId: 8, userName: '读者', commentContent: '已展开回复', praised: false, praiseCount: 0 }
+      ]
     }]
   });
   h.requestQueue.push(
     ok({ userId: 6, nickName: 'reply-user' }),
     ok({
       list: [{
-        commentId: 14,
+        commentId: 10,
         userId: 7,
         userName: '王二',
         commentContent: '一级评论',
-        praised: true,
-        praiseCount: 1,
-        childComments: []
+        childCommentCount: 2,
+        hasMoreChild: true,
+        childComments: [{
+          commentId: 14,
+          userId: 7,
+          userName: '王二',
+          commentContent: '第一条回复',
+          praised: true,
+          praiseCount: 1
+        }]
       }],
       hasMore: false
     })
@@ -620,8 +758,11 @@ async function testToggleCommentPraiseRequiresLoginAndRefreshesList() {
   assert.strictEqual(h.requestCalls[1].url.endsWith('/mini/api/articles/112/comments/14/favor?type=2'), true);
   assert.strictEqual(h.requestCalls[1].method, 'POST');
   assert.strictEqual(h.requestCalls[1].header.Authorization, 'Bearer comment-praise-token');
-  assert.strictEqual(h.page.data.comments[0].praised, true);
-  assert.strictEqual(h.page.data.comments[0].praiseCount, 1);
+  assert.strictEqual(h.page.data.comments[0].childComments.length, 2);
+  assert.strictEqual(h.page.data.comments[0].childComments[0].praised, true);
+  assert.strictEqual(h.page.data.comments[0].childComments[0].praiseCount, 1);
+  assert.strictEqual(h.page.data.comments[0].childComments[1].commentId, 15);
+  assert.strictEqual(h.page.data.comments[0].hasMoreChild, false);
 }
 
 async function testBlankCommentIsRejectedLocally() {
@@ -651,13 +792,16 @@ async function testBlankCommentIsRejectedLocally() {
   await testInvalidSceneDoesNotLoginOrRequest();
   await testAiEntryActivePraiseStillRequiresLogin();
   await testCollectRequiresLoginAndRefreshesDetail();
+  await testFollowAndUnfollowAuthorRequireLogin();
   await testPraiseDoubleTapDoesNotSubmitTwice();
+  await testBottomActionSwitchesAtCommentSection();
   await testArticleImagesCanPreview();
   await testCommentsLoadMore();
   await testLoadMoreRepliesAppendsChildren();
   await testPullDownRefreshReloadsDetailAndComments();
   await testSubmitCommentRequiresLoginAndRefreshesList();
   await testReplyCommentSubmitsParentAndTopCommentIds();
+  await testInlineReplyKeepsTopLevelDraftAndClosesOnCancel();
   await testDeleteOwnCommentRequiresLoginAndRefreshesList();
   await testToggleCommentPraiseRequiresLoginAndRefreshesList();
   await testBlankCommentIsRejectedLocally();
