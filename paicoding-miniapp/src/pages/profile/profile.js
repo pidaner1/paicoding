@@ -25,8 +25,6 @@ Page({
     needPrivacyAuthorization: false,
     loading: false,
     refreshing: false,
-    uploading: false,
-    saving: false,
     loggingOut: false,
     profileIncomplete: false,
     error: '',
@@ -100,6 +98,9 @@ Page({
   },
 
   async loginUser() {
+    if (this.data.loading) {
+      return
+    }
     this.setData({ loading: true, error: '' })
     try {
       const result = await auth.login()
@@ -137,85 +138,11 @@ Page({
     privacy.openPrivacyContract()
   },
 
-  onNickNameInput(e) {
-    this.setData({ nickName: e.detail.value })
-  },
-
-  onProfileInput(e) {
-    this.setData({ profile: e.detail.value })
-  },
-
-  async onChooseAvatar(e) {
-    if (this.data.uploading) {
+  showEdit() {
+    if (!this.data.loggedIn) {
       return
     }
-    const oldAvatarUrl = this.data.avatarUrl
-    const localAvatarUrl = e.detail.avatarUrl
-    if (!localAvatarUrl) {
-      wx.showToast({ title: '未选择头像', icon: 'none' })
-      return
-    }
-    this.setData({ uploading: true })
-    this.setData({ avatarUrl: localAvatarUrl })
-    try {
-      const user = await auth.uploadWithLogin('/mini/api/user/avatar', localAvatarUrl, 'image')
-      auth.persistUser(user)
-      this.setData({
-        user,
-        avatarUrl: user.avatarUrl,
-        profileIncomplete: auth.isProfileIncomplete(user),
-      })
-    }
-    catch (err) {
-      this.setData({ avatarUrl: oldAvatarUrl })
-      wx.showToast({ title: '头像上传失败', icon: 'none' })
-    }
-    finally {
-      this.setData({ uploading: false })
-    }
-  },
-
-  async saveProfile() {
-    const nickName = (this.data.nickName || '').trim()
-    if (!nickName) {
-      wx.showToast({ title: '请填写昵称', icon: 'none' })
-      return
-    }
-    if (nickName.length > 50 || /[\n\r\t]/.test(nickName)) {
-      wx.showToast({ title: '昵称格式不合法', icon: 'none' })
-      return
-    }
-    const profile = (this.data.profile || '').trim()
-    if (profile.length > 225 || /[\n\r\t]/.test(profile)) {
-      wx.showToast({ title: '简介格式不合法', icon: 'none' })
-      return
-    }
-    this.setData({ saving: true })
-    try {
-      const user = await auth.requestWithLogin({
-        url: '/mini/api/user/profile',
-        method: 'POST',
-        data: {
-          nickName,
-          profile,
-        },
-      })
-      this.setData({
-        user,
-        nickName: user.nickName || nickName,
-        avatarUrl: user.avatarUrl,
-        profile: user.profile || profile,
-        profileIncomplete: auth.isProfileIncomplete(user),
-      })
-      auth.persistUser(user)
-      wx.showToast({ title: '已保存', icon: 'success' })
-    }
-    catch (err) {
-      wx.showToast({ title: err.message || '保存失败', icon: 'none' })
-    }
-    finally {
-      this.setData({ saving: false })
-    }
+    wx.navigateTo({ url: '/pages/profile-edit/profile-edit' })
   },
 
   async logout() {

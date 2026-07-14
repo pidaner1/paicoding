@@ -4,6 +4,7 @@
   "pages": [
     "pages/index/index",
     "pages/profile/profile",
+    "pages/profile-edit/profile-edit",
     "pages/search/search",
     "pages/detail/detail",
     "pages/collection/collection",

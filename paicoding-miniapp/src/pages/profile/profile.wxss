@@ -17,6 +17,8 @@
   display: flex;
   align-items: center;
   gap: 30rpx;
+  position: relative;
+  z-index: 1;
 }
 
 .avatar {
@@ -31,10 +33,28 @@
   gap: 8rpx;
 }
 
+.login-entry {
+  flex: 1;
+}
+
+.login-text {
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .nick-name-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.edit-button {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nick-name {
