@@ -6,7 +6,7 @@
     "dev:ui": "wv dev --ui",
     "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
-    "test": "node --test test/profile-edit.test.cjs",
+    "test": "node --test test/*.test.cjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "open": "wv open",

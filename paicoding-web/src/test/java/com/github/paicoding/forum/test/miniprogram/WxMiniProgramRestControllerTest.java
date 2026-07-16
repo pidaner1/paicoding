@@ -14,6 +14,7 @@ import com.github.paicoding.forum.api.model.vo.comment.dto.TopCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
 import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.FollowUserInfoDTO;
 import com.github.paicoding.forum.api.model.vo.user.dto.UserStatisticInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
@@ -182,6 +183,55 @@ public class WxMiniProgramRestControllerTest {
         assertEquals(Integer.valueOf(890), res.getResult().getReadCount());
         assertEquals(Integer.valueOf(0), res.getResult().getCollectionCount());
         verify(userService).queryUserInfoWithStatistic(88L);
+    }
+
+    @Test
+    public void shouldReturnCurrentUserFollowList() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        PageListVo<FollowUserInfoDTO> source = PageListVo.newVo(Collections.singletonList(new FollowUserInfoDTO()), 10L);
+        when(userRelationService.getUserFollowList(eq(88L), any())).thenReturn(source);
+
+        ResVo<PageListVo<FollowUserInfoDTO>> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .userFollows("follow", 1L, 10L);
+
+        assertEquals(source, res.getResult());
+        verify(userRelationService).getUserFollowList(eq(88L), any());
+        verifyNoMoreInteractions(userRelationService);
+    }
+
+    @Test
+    public void shouldReturnFansWithCurrentFollowState() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        PageListVo<FollowUserInfoDTO> source = PageListVo.newVo(Collections.singletonList(new FollowUserInfoDTO()), 10L);
+        when(userRelationService.getUserFansList(eq(88L), any())).thenReturn(source);
+
+        ResVo<PageListVo<FollowUserInfoDTO>> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .userFollows("fans", 1L, 10L);
+
+        assertEquals(source, res.getResult());
+        verify(userRelationService).getUserFansList(eq(88L), any());
+        verify(userRelationService).updateUserFollowRelationId(source, 88L);
+        verifyNoMoreInteractions(userRelationService);
+    }
+
+    @Test
+    public void shouldRejectUnknownFollowListType() {
+        UserRelationService userRelationService = mock(UserRelationService.class);
+
+        ResVo<PageListVo<FollowUserInfoDTO>> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .userFollows("unknown", 1L, 10L);
+
+        assertEquals(StatusEnum.ILLEGAL_ARGUMENTS_MIXED.getCode(), res.getStatus().getCode());
+        verifyNoInteractions(userRelationService);
     }
 
     @Test

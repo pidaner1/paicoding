@@ -17,9 +17,9 @@ Add a dedicated native mini-program page for editing the current user's avatar, 
 ## Data Flow
 
 - On page load, initialize from `auth.getStoredUser()` only. Do not make an additional `/mini/api/user/me` request because the profile page has already refreshed the current user before navigation.
-- When an avatar is selected, upload it immediately with `auth.uploadWithLogin('/mini/api/user/avatar', ...)`.
+- When an avatar is selected, upload it immediately with `upload('/mini/api/user/avatar', ...)`. The edit entry is only shown after login, so the edit page does not trigger a fresh login check.
 - After a successful avatar upload, update page state and persist the returned user through `auth.persistUser()`.
-- When Save is tapped, submit nickname and profile with `auth.requestWithLogin()` to `POST /mini/api/user/profile`.
+- When Save is tapped, submit nickname and profile with `request()` to `POST /mini/api/user/profile`. Do not call `auth.ensureLogin()` or `auth.requestWithLogin()` from the edit page save flow.
 - Persist the returned user, show a success toast, and navigate back. The profile page's existing `onShow` flow reloads the displayed user and statistics.
 
 ## Validation And Failure Handling
@@ -30,7 +30,8 @@ Add a dedicated native mini-program page for editing the current user's avatar, 
 - Prevent duplicate avatar uploads and duplicate save requests.
 - Restore the previous avatar when upload fails.
 - Keep the user on the edit page when save fails and show the returned error message.
-- If no stored user exists, allow the authenticated upload/save helpers to establish login when the user performs an action.
+- Hide the edit entry on the profile page when the user is not logged in.
+- If the edit page is opened without a token, upload/save fail through the normal request layer instead of silently logging in.
 
 ## Scope
 

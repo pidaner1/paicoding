@@ -30,6 +30,10 @@ declare module 'wevu' {
     't-input': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input"), WeappComponent<ComponentProp<"t-input">>>;
     TNavbar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar"), WeappComponent<ComponentProp<"t-navbar">>>;
     't-navbar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar"), WeappComponent<ComponentProp<"t-navbar">>>;
+    TTabPanel: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel"), WeappComponent<ComponentProp<"t-tab-panel">>>;
+    't-tab-panel': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel"), WeappComponent<ComponentProp<"t-tab-panel">>>;
+    TTabs: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs"), WeappComponent<ComponentProp<"t-tabs">>>;
+    't-tabs': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs"), WeappComponent<ComponentProp<"t-tabs">>>;
     TTextarea: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea"), WeappComponent<ComponentProp<"t-textarea">>>;
     't-textarea': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea"), WeappComponent<ComponentProp<"t-textarea">>>;
   }
@@ -45,5 +49,7 @@ declare global {
   const TImage: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image/image"), WeappComponent<ComponentProp<"t-image">>>
   const TInput: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input"), WeappComponent<ComponentProp<"t-input">>>
   const TNavbar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar"), WeappComponent<ComponentProp<"t-navbar">>>
+  const TTabPanel: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel"), WeappComponent<ComponentProp<"t-tab-panel">>>
+  const TTabs: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs"), WeappComponent<ComponentProp<"t-tabs">>>
   const TTextarea: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea"), WeappComponent<ComponentProp<"t-textarea">>>
 }

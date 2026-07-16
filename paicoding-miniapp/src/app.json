@@ -7,6 +7,7 @@
     "pages/profile-edit/profile-edit",
     "pages/search/search",
     "pages/detail/detail",
+    "pages/following/following",
     "pages/collection/collection",
     "pages/history/history"
   ],

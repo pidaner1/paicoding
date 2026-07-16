@@ -2,6 +2,7 @@ package com.github.paicoding.forum.web.front.miniprogram.rest;
 
 import com.github.paicoding.forum.api.model.context.ReqInfoContext;
 import com.github.paicoding.forum.api.model.enums.DocumentTypeEnum;
+import com.github.paicoding.forum.api.model.enums.FollowTypeEnum;
 import com.github.paicoding.forum.api.model.enums.HomeSelectEnum;
 import com.github.paicoding.forum.api.model.enums.OperateTypeEnum;
 import com.github.paicoding.forum.api.model.vo.PageListVo;
@@ -20,6 +21,7 @@ import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
 import com.github.paicoding.forum.api.model.vo.user.UserRelationReq;
 import com.github.paicoding.forum.api.model.vo.user.dto.ArticleFootCountDTO;
 import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.FollowUserInfoDTO;
 import com.github.paicoding.forum.api.model.vo.user.dto.UserStatisticInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
@@ -126,6 +128,24 @@ public class WxMiniProgramRestController {
         Long currentUser = ReqInfoContext.getReqInfo().getUserId();
         UserStatisticInfoDTO statistics = userService.queryUserInfoWithStatistic(currentUser);
         return ResVo.ok(toMiniUserStatistics(statistics));
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @GetMapping(path = "user/follows")
+    public ResVo<PageListVo<FollowUserInfoDTO>> userFollows(@RequestParam(name = "type") String type,
+                                                            @RequestParam(name = "page", required = false, defaultValue = "1") Long page,
+                                                            @RequestParam(name = "size", required = false, defaultValue = "10") Long size) {
+        if (!FollowTypeEnum.FOLLOW.getCode().equals(type) && !FollowTypeEnum.FANS.getCode().equals(type)) {
+            return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "关注类型不合法");
+        }
+        Long currentUser = ReqInfoContext.getReqInfo().getUserId();
+        PageParam pageParam = buildPageParam(page, size);
+        if (FollowTypeEnum.FOLLOW.getCode().equals(type)) {
+            return ResVo.ok(userRelationService.getUserFollowList(currentUser, pageParam));
+        }
+        PageListVo<FollowUserInfoDTO> fans = userRelationService.getUserFansList(currentUser, pageParam);
+        userRelationService.updateUserFollowRelationId(fans, currentUser);
+        return ResVo.ok(fans);
     }
 
     @Permission(role = UserRole.LOGIN)

@@ -26,11 +26,11 @@
         <text class="item-value">{{statistics.joinDayCount}}</text>
         <text class="item-label">加入天数</text>
       </view>
-      <view class="item">
+      <view class="item" data-tab="follow" bindtap="openFollowing">
         <text class="item-value">{{statistics.followCount}}</text>
         <text class="item-label">关注</text>
       </view>
-      <view class="item">
+      <view class="item" data-tab="fans" bindtap="openFollowing">
         <text class="item-value">{{statistics.fansCount}}</text>
         <text class="item-label">粉丝</text>
       </view>
@@ -42,7 +42,7 @@
       <image src="/assets/images/article.png" class="icon" />
       <text class="label">我的文章</text>
     </view>
-    <view class="flex-col-ic">
+    <view class="flex-col-ic" data-tab="follow" bindtap="openFollowing">
       <image src="/assets/images/favorite.png" class="icon" />
       <text class="label">我的关注</text>
     </view>

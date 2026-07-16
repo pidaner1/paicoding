@@ -137,6 +137,28 @@ declare module 'weapp-vite/typed-components' {
       readonly visible?: boolean;
       readonly zIndex?: number;
     };
+    't-tab-panel': {
+      readonly badgeProps?: object;
+      readonly disabled?: boolean;
+      readonly icon?: string | object;
+      readonly label?: string;
+      readonly lazy?: boolean;
+      readonly panel?: string;
+      readonly value?: TabValue;
+    };
+    't-tabs': {
+      readonly animation?: TabAnimation;
+      readonly bottomLineMode?: 'fixed' | 'auto' | 'full';
+      readonly defaultValue?: TabValue;
+      readonly showBottomLine?: boolean;
+      readonly spaceEvenly?: boolean;
+      readonly split?: boolean;
+      readonly sticky?: boolean;
+      readonly stickyProps?: StickyProps;
+      readonly swipeable?: boolean;
+      readonly theme?: 'line' | 'tag' | 'card';
+      readonly value?: TabValue;
+    };
     't-textarea': {
       readonly adjustPosition?: boolean;
       readonly allowInputOverMax?: boolean;

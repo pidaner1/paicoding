@@ -2732,6 +2732,102 @@
       ]
     },
     {
+      "name": "t-tab-panel",
+      "description": "自动导入的小程序组件",
+      "attributes": [
+        {
+          "name": "badgeProps",
+          "description": "类型: object"
+        },
+        {
+          "name": "disabled",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "icon",
+          "description": "类型: string | object"
+        },
+        {
+          "name": "label",
+          "description": "类型: string"
+        },
+        {
+          "name": "lazy",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "panel",
+          "description": "类型: string"
+        },
+        {
+          "name": "value",
+          "description": "类型: TabValue"
+        }
+      ],
+      "references": [
+        {
+          "name": "weapp-vite 自动导入组件",
+          "url": "https://vite.icebreaker.top/guide/auto-import-components.html"
+        }
+      ]
+    },
+    {
+      "name": "t-tabs",
+      "description": "自动导入的小程序组件",
+      "attributes": [
+        {
+          "name": "animation",
+          "description": "类型: TabAnimation"
+        },
+        {
+          "name": "bottomLineMode",
+          "description": "类型: 'fixed' | 'auto' | 'full'"
+        },
+        {
+          "name": "defaultValue",
+          "description": "类型: TabValue"
+        },
+        {
+          "name": "showBottomLine",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "spaceEvenly",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "split",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "sticky",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "stickyProps",
+          "description": "类型: StickyProps"
+        },
+        {
+          "name": "swipeable",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "theme",
+          "description": "类型: 'line' | 'tag' | 'card'"
+        },
+        {
+          "name": "value",
+          "description": "类型: TabValue"
+        }
+      ],
+      "references": [
+        {
+          "name": "weapp-vite 自动导入组件",
+          "url": "https://vite.icebreaker.top/guide/auto-import-components.html"
+        }
+      ]
+    },
+    {
       "name": "t-textarea",
       "description": "自动导入的小程序组件",
       "attributes": [
