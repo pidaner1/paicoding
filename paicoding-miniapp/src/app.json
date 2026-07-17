@@ -8,6 +8,7 @@
     "pages/search/search",
     "pages/detail/detail",
     "pages/following/following",
+    "pages/my-articles/my-articles",
     "pages/collection/collection",
     "pages/history/history"
   ],

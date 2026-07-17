@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add a native mini-program page where the signed-in user can manage their own articles. The page has two TDesign tabs: `文章` for submitted/published work and `草稿` for unpublished drafts. Drafts and review articles can be edited in the mini-program.
+Add a native mini-program page where the signed-in user can view their own articles. The page has two TDesign tabs: `文章` for submitted/published work and `草稿` for unpublished drafts. Drafts can be submitted for publishing, but the mini-program does not create or edit article content in this iteration.
 
 ## Navigation And Page Structure
 
@@ -11,8 +11,7 @@ Add a native mini-program page where the signed-in user can manage their own art
 - Use one page with TDesign `t-tabs` and two `t-tab-panel` panels: `文章` and `草稿`.
 - Keep each tab's list in a full-width `scroll-view` so the scrollbar sits against the screen edge. Put horizontal spacing on the inner list wrapper.
 - Keep each tab's paging, loading, refresh, and error state independent.
-- Use the existing `article-card` for published articles when opening public detail is correct.
-- Use a dedicated owner article row/card when the article needs owner-only status or edit actions.
+- Use a dedicated owner article row/card so status and draft publish actions can be shown consistently.
 
 ## Article State Rules
 
@@ -20,18 +19,18 @@ Add a native mini-program page where the signed-in user can manage their own art
 - Treat backend `ONLINE = 1` as normal articles in the `文章` tab.
 - Treat backend `REVIEW = 2` as articles in the `文章` tab with an `审核中` badge.
 - Published articles open the public detail page by default.
-- Draft and review articles open the mini-program edit page.
+- Published and review articles open the public detail page.
+- Draft articles stay on the list and expose a `发布` action.
 - The backend already sends non-whitelisted authors to `REVIEW` when they submit for publishing, so the mini-program should not invent a separate approval state.
 
-## Editing Experience
+## Draft Publishing
 
-- Add `pages/article-edit/article-edit` as a native mini-program editor.
-- The editor supports loading an existing owned article, editing fields, saving as draft, and submitting for publish.
-- The initial field set is title, short title, summary, category, tags, cover URL, source type, source URL, read type, and Markdown content.
-- Keep the first version focused on text fields and existing category/tag data; do not add image upload, rich Markdown toolbar, AI SEO generation, paid article configuration, or column selection.
-- `保存草稿` sends `actionType = save`.
-- `提交发布` sends `actionType = post`; the existing backend service decides whether it becomes `ONLINE` or `REVIEW`.
-- After saving, show a toast and return to the list. The list reloads on show so status changes are reflected.
+- Each draft card has a `发布` button.
+- Tapping `发布` calls a backend publish endpoint with the draft article ID only.
+- The backend loads the existing draft, validates ownership, rebuilds an `ArticlePostReq` from stored content, and sends `actionType = post`.
+- The existing backend service decides whether the result becomes `ONLINE` or `REVIEW`.
+- After success, show `已发布` or `已提交审核`, refresh the draft list, and refresh the article list if it has been loaded.
+- Do not add mini-program article creation or editing in this iteration.
 
 ## Backend Contract
 
@@ -43,10 +42,9 @@ Add a native mini-program page where the signed-in user can manage their own art
   - `draft`: `OFFLINE`
 - Return `PageListVo<WxMiniArticleDTO>` with `list` and `hasMore`.
 - Include article status and status text in the mini article DTO so the UI can display `审核中`.
-- Add authenticated `GET /mini/api/user/articles/{articleId}/edit` for owner-only edit detail.
-- Add authenticated `POST /mini/api/user/articles/save` accepting an article post request payload and returning the saved article ID.
-- Reuse `ArticleWriteService.saveArticle` for save and submit. Do not add new tables.
-- Validate ownership before returning edit details or updating an existing article.
+- Add authenticated `POST /mini/api/user/articles/{articleId}/publish` for owner-only draft publishing.
+- Reuse `ArticleWriteService.saveArticle` for publishing. Do not add new tables.
+- Validate ownership and ensure only `OFFLINE` drafts can be published.
 
 ## Client Data Flow
 
@@ -54,30 +52,28 @@ Add a native mini-program page where the signed-in user can manage their own art
 - Support pull-to-refresh, lower-edge pagination, empty states, first-load failure retry, and end-of-list messaging.
 - Use `auth.requestWithLogin` for all owner article list and edit requests.
 - Normalize missing list data to an empty array and missing `hasMore` to false.
-- On `onShow`, refresh the active tab if the page is returning from the editor after a save.
+- Publishing a draft refreshes the draft tab and refreshes the article tab if it is already loaded.
 
 ## Failure Handling
 
 - If a list request fails on first load, show a panel with retry.
 - If a later page fails, keep already-loaded rows visible and expose retry through refresh or scrolling again.
-- Prevent duplicate list loads and duplicate editor submissions.
+- Prevent duplicate list loads and duplicate draft publish submissions.
 - If login expires, rely on the shared auth/request layer.
 - If an article is missing or not owned by the current user, show the backend error and keep the user on the list/editor safely.
 
 ## Scope
 
 - Add the two-tab owner article list page.
-- Add the native mini-program article editor page.
 - Add the profile navigation binding.
-- Add the mini-program backend endpoints and minimal service/DAO support required for status-filtered owner lists.
+- Add the mini-program backend endpoints and minimal service/DAO support required for status-filtered owner lists and draft publishing.
 - Preserve existing public article list, detail, collection, history, profile, and following behavior.
-- Do not add delete, upload, rich text editing, column management, paid reading configuration, or admin approval UI in this iteration.
+- Do not add create, edit, delete, upload, rich text editing, column management, paid reading configuration, or admin approval UI in this iteration.
 
 ## Verification
 
-- Add focused client tests for tab loading, independent paging, refresh, empty/error states, draft edit navigation, review badge rendering, and profile navigation.
-- Add client tests for editor load, save draft, submit publish, duplicate-submit prevention, and validation errors.
-- Add backend tests for list type validation, status filtering, owner-only edit detail, owner-only update, and save/submit service delegation.
+- Add focused client tests for tab loading, independent paging, refresh, empty/error states, review badge rendering, profile navigation, and draft publishing.
+- Add backend tests for list type validation, status filtering, owner-only draft publishing, non-owner rejection, non-draft rejection, and publish service delegation.
 - Run mini-program tests, lint for touched files, and `pnpm build`.
 - Compile or test affected backend code with Java 8 and the repository's targeted Maven workflow; do not run `mvn clean`.
 - If WeChat DevTools is logged in with service port enabled, capture the new page with `wv screenshot` for visual acceptance.

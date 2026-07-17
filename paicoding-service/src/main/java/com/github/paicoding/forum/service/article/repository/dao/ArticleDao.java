@@ -33,6 +33,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -181,6 +182,17 @@ public class ArticleDao extends ServiceImpl<ArticleMapper, ArticleDO> {
             // 作者本人，可以查看草稿、审核、上线文章；其他用户，只能查看上线的文章
             query.eq(ArticleDO::getStatus, PushStatusEnum.ONLINE.getCode());
         }
+        return baseMapper.selectList(query);
+    }
+
+    public List<ArticleDO> listArticlesByUserIdAndStatuses(Long userId, PageParam pageParam, Collection<Integer> statuses) {
+        LambdaQueryWrapper<ArticleDO> query = Wrappers.lambdaQuery();
+        query.eq(ArticleDO::getDeleted, YesOrNoEnum.NO.getCode())
+                .eq(ArticleDO::getUserId, userId)
+                .in(!CollectionUtils.isEmpty(statuses), ArticleDO::getStatus, statuses)
+                .last(PageParam.getLimitSql(pageParam))
+                .orderByDesc(ArticleDO::getUpdateTime)
+                .orderByDesc(ArticleDO::getId);
         return baseMapper.selectList(query);
     }
 

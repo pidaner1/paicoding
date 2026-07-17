@@ -38,7 +38,7 @@
   </view>
 
   <view class="card">
-    <view class="flex-col-ic">
+    <view class="flex-col-ic" bindtap="openMyArticles">
       <image src="/assets/images/article.png" class="icon" />
       <text class="label">我的文章</text>
     </view>

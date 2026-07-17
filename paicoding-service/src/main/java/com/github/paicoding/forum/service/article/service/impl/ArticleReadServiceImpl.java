@@ -285,6 +285,15 @@ public class ArticleReadServiceImpl implements ArticleReadService {
         return buildArticleListVo(records, pageParam.getPageSize());
     }
 
+    @Override
+    public PageListVo<ArticleDTO> queryArticlesByUserAndStatuses(Long userId, PageParam pageParam, List<Integer> statuses) {
+        List<ArticleDO> records = articleDao.listArticlesByUserIdAndStatuses(userId, pageParam, statuses);
+        if (CollectionUtils.isEmpty(records)) {
+            return PageListVo.emptyVo();
+        }
+        return buildArticleListVo(records, pageParam.getPageSize());
+    }
+
     /**
      * fixme @楼仔 这个排序逻辑看着像是有问题的样子
      *

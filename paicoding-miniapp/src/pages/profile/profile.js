@@ -173,6 +173,10 @@ Page({
     wx.navigateTo({ url: '/pages/collection/collection' })
   },
 
+  openMyArticles() {
+    wx.navigateTo({ url: '/pages/my-articles/my-articles' })
+  },
+
   openFollowing(event) {
     const tab = event && event.currentTarget.dataset.tab === 'fans' ? 'fans' : 'follow'
     wx.navigateTo({ url: `/pages/following/following?tab=${tab}` })
