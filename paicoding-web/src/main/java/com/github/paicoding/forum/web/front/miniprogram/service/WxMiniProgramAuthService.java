@@ -1,6 +1,7 @@
 package com.github.paicoding.forum.web.front.miniprogram.service;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.annotation.JSONField;
 import com.github.paicoding.forum.api.model.context.ReqInfoContext;
 import com.github.paicoding.forum.api.model.exception.ExceptionUtil;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
@@ -154,12 +155,17 @@ public class WxMiniProgramAuthService {
             throw ExceptionUtil.of(StatusEnum.LOGIN_FAILED_MIXED, "微信小程序AppID/AppSecret未配置");
         }
 
-        WxMiniCode2SessionRes res = HttpRequestHelper.get(WX_CODE2SESSION_URL,
+        // 微信 jscode2session 返回 JSON 但响应头 Content-Type 为 text/plain，
+        // 默认的 MappingJackson2HttpMessageConverter 无法处理，会抛 RestClientException 被 HttpRequestHelper 吞成 null。
+        // 这里先用 String.class 接收（StringHttpMessageConverter 原生支持 text/plain），再用 fastjson 本地解析。
+        String body = HttpRequestHelper.get(WX_CODE2SESSION_URL,
                 MapUtils.create("appid", properties.getAppId(), "secret", properties.getAppSecret(), "code", code),
-                WxMiniCode2SessionRes.class);
-        if (res == null) {
+                String.class);
+        if (StringUtils.isBlank(body)) {
             throw ExceptionUtil.of(StatusEnum.LOGIN_FAILED_MIXED, "微信code2Session无响应");
         }
+        WxMiniCode2SessionRes res = JSON.parseObject(body, WxMiniCode2SessionRes.class);
+        log.info("wx mini code2Session raw body={}", body);
         if (StringUtils.isNotBlank(res.getErrCode()) && !"0".equals(res.getErrCode())) {
             log.warn("wx mini code2Session failed, errCode={}, errMsg={}", res.getErrCode(), res.getErrMsg());
             throw ExceptionUtil.of(StatusEnum.LOGIN_FAILED_MIXED, res.getErrMsg());
@@ -356,15 +362,15 @@ public class WxMiniProgramAuthService {
 
     @Data
     private static class WxMiniCode2SessionRes {
-        @JsonProperty("openid")
+        @JSONField(name = "openid")
         private String openId;
-        @JsonProperty("session_key")
+        @JSONField(name = "session_key")
         private String sessionKey;
-        @JsonProperty("unionid")
+        @JSONField(name = "unionid")
         private String unionId;
-        @JsonProperty("errcode")
+        @JSONField(name = "errcode")
         private String errCode;
-        @JsonProperty("errmsg")
+        @JSONField(name = "errmsg")
         private String errMsg;
 
         public WxMiniCode2SessionRes setOpenId(String openId) {
