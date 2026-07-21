@@ -1,12 +1,18 @@
 package com.github.paicoding.forum.web.front.miniprogram.rest;
 
 import com.github.paicoding.forum.api.model.context.ReqInfoContext;
+import com.github.paicoding.forum.api.model.enums.ArticleReadTypeEnum;
+import com.github.paicoding.forum.api.model.enums.ArticleTypeEnum;
 import com.github.paicoding.forum.api.model.enums.DocumentTypeEnum;
+import com.github.paicoding.forum.api.model.enums.FollowTypeEnum;
 import com.github.paicoding.forum.api.model.enums.HomeSelectEnum;
 import com.github.paicoding.forum.api.model.enums.OperateTypeEnum;
+import com.github.paicoding.forum.api.model.enums.PushStatusEnum;
+import com.github.paicoding.forum.api.model.enums.SourceTypeEnum;
 import com.github.paicoding.forum.api.model.vo.PageListVo;
 import com.github.paicoding.forum.api.model.vo.PageParam;
 import com.github.paicoding.forum.api.model.vo.ResVo;
+import com.github.paicoding.forum.api.model.vo.article.ArticlePostReq;
 import com.github.paicoding.forum.api.model.vo.article.dto.ArticleDTO;
 import com.github.paicoding.forum.api.model.vo.article.dto.CategoryDTO;
 import com.github.paicoding.forum.api.model.vo.article.dto.SimpleArticleDTO;
@@ -17,28 +23,35 @@ import com.github.paicoding.forum.api.model.vo.comment.dto.SubCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.dto.TopCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
+import com.github.paicoding.forum.api.model.vo.user.UserRelationReq;
 import com.github.paicoding.forum.api.model.vo.user.dto.ArticleFootCountDTO;
 import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.FollowUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.UserStatisticInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentPageDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniFollowReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniLoginReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniLoginRes;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniProfileReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniSearchHintDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniUserDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniUserStatisticsDTO;
 import com.github.paicoding.forum.core.mdc.MdcDot;
 import com.github.paicoding.forum.core.permission.Permission;
 import com.github.paicoding.forum.core.permission.UserRole;
 import com.github.paicoding.forum.core.util.MarkdownConverter;
 import com.github.paicoding.forum.service.article.repository.entity.ArticleDO;
 import com.github.paicoding.forum.service.article.service.ArticleReadService;
+import com.github.paicoding.forum.service.article.service.ArticleWriteService;
 import com.github.paicoding.forum.service.article.service.CategoryService;
 import com.github.paicoding.forum.service.comment.repository.entity.CommentDO;
 import com.github.paicoding.forum.service.comment.service.CommentReadService;
 import com.github.paicoding.forum.service.comment.service.CommentWriteService;
 import com.github.paicoding.forum.service.user.service.UserFootService;
+import com.github.paicoding.forum.service.user.service.UserRelationService;
 import com.github.paicoding.forum.service.user.service.UserService;
 import com.github.paicoding.forum.web.front.miniprogram.service.WxMiniProgramAuthService;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -54,11 +67,14 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -72,25 +88,31 @@ public class WxMiniProgramRestController {
 
     private final WxMiniProgramAuthService authService;
     private final ArticleReadService articleReadService;
+    private final ArticleWriteService articleWriteService;
     private final CategoryService categoryService;
     private final CommentReadService commentReadService;
     private final CommentWriteService commentWriteService;
     private final UserFootService userFootService;
+    private final UserRelationService userRelationService;
     private final UserService userService;
 
     public WxMiniProgramRestController(WxMiniProgramAuthService authService,
                                        ArticleReadService articleReadService,
+                                       ArticleWriteService articleWriteService,
                                        CategoryService categoryService,
                                        CommentReadService commentReadService,
                                        CommentWriteService commentWriteService,
                                        UserFootService userFootService,
+                                       UserRelationService userRelationService,
                                        UserService userService) {
         this.authService = authService;
         this.articleReadService = articleReadService;
+        this.articleWriteService = articleWriteService;
         this.categoryService = categoryService;
         this.commentReadService = commentReadService;
         this.commentWriteService = commentWriteService;
         this.userFootService = userFootService;
+        this.userRelationService = userRelationService;
         this.userService = userService;
     }
 
@@ -113,6 +135,32 @@ public class WxMiniProgramRestController {
     }
 
     @Permission(role = UserRole.LOGIN)
+    @GetMapping(path = "user/statistics")
+    public ResVo<WxMiniUserStatisticsDTO> currentUserStatistics() {
+        Long currentUser = ReqInfoContext.getReqInfo().getUserId();
+        UserStatisticInfoDTO statistics = userService.queryUserInfoWithStatistic(currentUser);
+        return ResVo.ok(toMiniUserStatistics(statistics));
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @GetMapping(path = "user/follows")
+    public ResVo<PageListVo<FollowUserInfoDTO>> userFollows(@RequestParam(name = "type") String type,
+                                                            @RequestParam(name = "page", required = false, defaultValue = "1") Long page,
+                                                            @RequestParam(name = "size", required = false, defaultValue = "10") Long size) {
+        if (!FollowTypeEnum.FOLLOW.getCode().equals(type) && !FollowTypeEnum.FANS.getCode().equals(type)) {
+            return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "关注类型不合法");
+        }
+        Long currentUser = ReqInfoContext.getReqInfo().getUserId();
+        PageParam pageParam = buildPageParam(page, size);
+        if (FollowTypeEnum.FOLLOW.getCode().equals(type)) {
+            return ResVo.ok(userRelationService.getUserFollowList(currentUser, pageParam));
+        }
+        PageListVo<FollowUserInfoDTO> fans = userRelationService.getUserFansList(currentUser, pageParam);
+        userRelationService.updateUserFollowRelationId(fans, currentUser);
+        return ResVo.ok(fans);
+    }
+
+    @Permission(role = UserRole.LOGIN)
     @GetMapping(path = "user/collections")
     public ResVo<PageListVo<WxMiniArticleDTO>> userCollections(@RequestParam(name = "page", required = false, defaultValue = "1") Long page,
                                                                @RequestParam(name = "size", required = false, defaultValue = "10") Long size) {
@@ -128,6 +176,38 @@ public class WxMiniProgramRestController {
         Long currentUser = ReqInfoContext.getReqInfo().getUserId();
         PageListVo<ArticleDTO> articles = articleReadService.queryArticlesByUserAndType(currentUser, buildPageParam(page, size), HomeSelectEnum.READ);
         return ResVo.ok(toMiniPage(articles));
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @GetMapping(path = "user/articles")
+    public ResVo<PageListVo<WxMiniArticleDTO>> userArticles(@RequestParam(name = "type") String type,
+                                                            @RequestParam(name = "page", required = false, defaultValue = "1") Long page,
+                                                            @RequestParam(name = "size", required = false, defaultValue = "10") Long size) {
+        List<Integer> statuses = resolveOwnerArticleStatuses(type);
+        if (statuses == null) {
+            return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "文章类型不合法");
+        }
+        Long currentUser = ReqInfoContext.getReqInfo().getUserId();
+        PageListVo<ArticleDTO> articles = articleReadService.queryArticlesByUserAndStatuses(currentUser, buildPageParam(page, size), statuses);
+        return ResVo.ok(toMiniPage(articles));
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @PostMapping(path = "user/articles/{articleId}/publish")
+    public ResVo<Map<String, Object>> publishDraftArticle(@PathVariable(name = "articleId") Long articleId) {
+        ArticleDO basic = articleReadService.queryBasicArticle(articleId);
+        ResVo<Map<String, Object>> invalid = validateOwnedDraftForPublish(basic);
+        if (invalid != null) {
+            return invalid;
+        }
+        ArticleDTO article = articleReadService.queryDetailArticleInfo(articleId);
+        Long savedArticleId = articleWriteService.saveArticle(buildDraftPublishReq(article, basic), ReqInfoContext.getReqInfo().getUserId());
+        ArticleDO saved = articleReadService.queryBasicArticle(savedArticleId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("articleId", savedArticleId);
+        result.put("status", saved == null ? null : saved.getStatus());
+        result.put("statusText", saved == null ? null : statusText(saved.getStatus()));
+        return ResVo.ok(result);
     }
 
     @Permission(role = UserRole.LOGIN)
@@ -170,7 +250,30 @@ public class WxMiniProgramRestController {
         }
         fillAuthorInfo(article);
         WxMiniArticleDetailDTO detail = toMiniDetail(article);
+        detail.setFollowed(isFollowedByCurrentUser(article.getAuthor(), currentUser));
         return ResVo.ok(detail);
+    }
+
+    @Permission(role = UserRole.LOGIN)
+    @PostMapping(path = "users/{authorId}/follow")
+    public ResVo<Boolean> followAuthor(@PathVariable(name = "authorId") Long authorId,
+                                       @RequestBody WxMiniFollowReq req) {
+        if (authorId == null || authorId <= 0 || req == null || req.getFollowed() == null) {
+            return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "关注参数不合法");
+        }
+        Long currentUserId = ReqInfoContext.getReqInfo().getUserId();
+        if (Objects.equals(authorId, currentUserId)) {
+            return ResVo.fail(StatusEnum.FORBID_ERROR_MIXED, "不能关注自己");
+        }
+        if (userService.queryBasicUserInfo(authorId) == null) {
+            return ResVo.fail(StatusEnum.USER_NOT_EXISTS, authorId);
+        }
+
+        UserRelationReq relation = new UserRelationReq();
+        relation.setUserId(authorId);
+        relation.setFollowed(req.getFollowed());
+        userRelationService.saveUserRelation(relation);
+        return ResVo.ok(true);
     }
 
     @GetMapping(path = "search")
@@ -419,6 +522,52 @@ public class WxMiniProgramRestController {
                 || operate == OperateTypeEnum.CANCEL_PRAISE;
     }
 
+    private List<Integer> resolveOwnerArticleStatuses(String type) {
+        if ("article".equals(type)) {
+            return Arrays.asList(PushStatusEnum.ONLINE.getCode(), PushStatusEnum.REVIEW.getCode());
+        }
+        if ("draft".equals(type)) {
+            return Collections.singletonList(PushStatusEnum.OFFLINE.getCode());
+        }
+        return null;
+    }
+
+    private ResVo<Map<String, Object>> validateOwnedDraftForPublish(ArticleDO article) {
+        if (article == null) {
+            return ResVo.fail(StatusEnum.ARTICLE_NOT_EXISTS, "文章不存在");
+        }
+        Long currentUser = ReqInfoContext.getReqInfo().getUserId();
+        if (!Objects.equals(article.getUserId(), currentUser)) {
+            return ResVo.fail(StatusEnum.FORBID_ERROR_MIXED, "请确认文章是否属于您!");
+        }
+        if (!Objects.equals(article.getStatus(), PushStatusEnum.OFFLINE.getCode())) {
+            return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "只有草稿可以发布");
+        }
+        return null;
+    }
+
+    private ArticlePostReq buildDraftPublishReq(ArticleDTO article, ArticleDO basic) {
+        ArticlePostReq req = new ArticlePostReq();
+        req.setArticleId(article.getArticleId());
+        req.setTitle(StringUtils.trim(article.getTitle()));
+        req.setShortTitle(StringUtils.trimToEmpty(article.getShortTitle()));
+        req.setSummary(StringUtils.trimToEmpty(article.getSummary()));
+        req.setCover(StringUtils.trimToEmpty(article.getCover()));
+        req.setUrlSlug(article.getUrlSlug());
+        req.setCategoryId(article.getCategory() == null ? null : article.getCategory().getCategoryId());
+        req.setContent(article.getContent());
+        req.setSourceUrl(StringUtils.trimToEmpty(article.getSourceUrl()));
+        req.setArticleType(ArticleTypeEnum.BLOG.name());
+        req.setSource(basic == null || basic.getSource() == null ? SourceTypeEnum.ORIGINAL.getCode() : basic.getSource());
+        req.setReadType(article.getReadType() == null ? ArticleReadTypeEnum.NORMAL.getType() : article.getReadType());
+        Set<Long> tagIds = article.getTags() == null
+                ? Collections.emptySet()
+                : article.getTags().stream().filter(Objects::nonNull).map(TagDTO::getTagId).collect(Collectors.toSet());
+        req.setTagIds(tagIds);
+        req.setActionType("post");
+        return req;
+    }
+
     private PageParam buildPageParam(Long page, Long size) {
         long safePage = page == null || page <= 0 ? PageParam.DEFAULT_PAGE_NUM : page;
         long safeSize = size == null || size <= 0 ? PageParam.DEFAULT_PAGE_SIZE : Math.min(size, 20L);
@@ -512,6 +661,13 @@ public class WxMiniProgramRestController {
         return detail;
     }
 
+    private Boolean isFollowedByCurrentUser(Long authorId, Long currentUserId) {
+        if (authorId == null || currentUserId == null || Objects.equals(authorId, currentUserId)) {
+            return false;
+        }
+        return userRelationService.getFollowedUserId(Collections.singletonList(authorId), currentUserId).contains(authorId);
+    }
+
     private WxMiniArticleDTO toMiniArticle(ArticleDTO article) {
         ArticleFootCountDTO count = article.getCount();
         return new WxMiniArticleDTO()
@@ -527,6 +683,8 @@ public class WxMiniProgramRestController {
                 .setCategoryId(article.getCategory() == null ? null : article.getCategory().getCategoryId())
                 .setCategory(article.getCategory() == null ? null : article.getCategory().getCategory())
                 .setTags(article.getTags() == null ? Collections.emptyList() : article.getTags().stream().map(TagDTO::getTag).collect(Collectors.toList()))
+                .setStatus(article.getStatus())
+                .setStatusText(statusText(article.getStatus()))
                 .setReadCount(count == null ? 0 : count.getReadCount())
                 .setPraiseCount(count == null ? 0 : count.getPraiseCount())
                 .setCollectionCount(count == null ? 0 : count.getCollectionCount())
@@ -534,6 +692,31 @@ public class WxMiniProgramRestController {
                 .setCreateTime(article.getCreateTime())
                 .setLastUpdateTime(article.getLastUpdateTime())
                 .setSearchHit(article.getSearchHit());
+    }
+
+    private String statusText(Integer status) {
+        if (Objects.equals(status, PushStatusEnum.REVIEW.getCode())) {
+            return "审核中";
+        }
+        return status == null ? "" : PushStatusEnum.formCode(status).getDesc();
+    }
+
+    private WxMiniUserStatisticsDTO toMiniUserStatistics(UserStatisticInfoDTO statistics) {
+        if (statistics == null) {
+            return new WxMiniUserStatisticsDTO();
+        }
+        return new WxMiniUserStatisticsDTO()
+                .setJoinDayCount(valueOrZero(statistics.getJoinDayCount()))
+                .setFollowCount(valueOrZero(statistics.getFollowCount()))
+                .setFansCount(valueOrZero(statistics.getFansCount()))
+                .setArticleCount(valueOrZero(statistics.getArticleCount()))
+                .setPraiseCount(valueOrZero(statistics.getPraiseCount()))
+                .setReadCount(valueOrZero(statistics.getReadCount()))
+                .setCollectionCount(valueOrZero(statistics.getCollectionCount()));
+    }
+
+    private Integer valueOrZero(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private void fillAuthorInfo(ArticleDTO article) {

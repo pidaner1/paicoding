@@ -4,27 +4,36 @@ import com.github.paicoding.forum.api.model.context.ReqInfoContext;
 import com.github.paicoding.forum.api.model.enums.DocumentTypeEnum;
 import com.github.paicoding.forum.api.model.enums.HomeSelectEnum;
 import com.github.paicoding.forum.api.model.enums.OperateTypeEnum;
+import com.github.paicoding.forum.api.model.enums.PushStatusEnum;
 import com.github.paicoding.forum.api.model.vo.PageListVo;
 import com.github.paicoding.forum.api.model.vo.ResVo;
 import com.github.paicoding.forum.api.model.vo.article.dto.ArticleDTO;
 import com.github.paicoding.forum.api.model.vo.article.dto.CategoryDTO;
+import com.github.paicoding.forum.api.model.vo.article.dto.TagDTO;
 import com.github.paicoding.forum.api.model.vo.comment.CommentSaveReq;
 import com.github.paicoding.forum.api.model.vo.comment.dto.SubCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.dto.TopCommentDTO;
 import com.github.paicoding.forum.api.model.vo.comment.vo.SubCommentListVO;
 import com.github.paicoding.forum.api.model.vo.constants.StatusEnum;
+import com.github.paicoding.forum.api.model.vo.user.dto.BaseUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.FollowUserInfoDTO;
+import com.github.paicoding.forum.api.model.vo.user.dto.UserStatisticInfoDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniArticleDetailDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentDTO;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniCommentPageDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniFollowReq;
 import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniSearchHintDTO;
+import com.github.paicoding.forum.api.model.vo.wx.mini.WxMiniUserStatisticsDTO;
 import com.github.paicoding.forum.service.article.repository.entity.ArticleDO;
 import com.github.paicoding.forum.service.article.service.ArticleReadService;
+import com.github.paicoding.forum.service.article.service.ArticleWriteService;
 import com.github.paicoding.forum.service.article.service.CategoryService;
 import com.github.paicoding.forum.service.comment.repository.entity.CommentDO;
 import com.github.paicoding.forum.service.comment.service.CommentReadService;
 import com.github.paicoding.forum.service.comment.service.CommentWriteService;
 import com.github.paicoding.forum.service.user.service.UserFootService;
+import com.github.paicoding.forum.service.user.service.UserRelationService;
 import com.github.paicoding.forum.service.user.service.UserService;
 import com.github.paicoding.forum.web.front.miniprogram.rest.WxMiniProgramRestController;
 import com.github.paicoding.forum.web.front.miniprogram.service.WxMiniProgramAuthService;
@@ -35,6 +44,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,6 +156,261 @@ public class WxMiniProgramRestControllerTest {
                 .articleDetail(404L);
 
         assertEquals(StatusEnum.ARTICLE_NOT_EXISTS.getCode(), res.getStatus().getCode());
+    }
+
+    @Test
+    public void shouldReturnCurrentUserStatistics() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+
+        UserStatisticInfoDTO source = new UserStatisticInfoDTO();
+        source.setJoinDayCount(120);
+        source.setFollowCount(12);
+        source.setFansCount(34);
+        source.setArticleCount(5);
+        source.setPraiseCount(67);
+        source.setReadCount(890);
+        source.setCollectionCount(null);
+        UserService userService = mock(UserService.class);
+        when(userService.queryUserInfoWithStatistic(88L)).thenReturn(source);
+
+        ResVo<WxMiniUserStatisticsDTO> res = newController(
+                mock(ArticleReadService.class), mock(CategoryService.class), userService)
+                .currentUserStatistics();
+
+        assertEquals(Integer.valueOf(120), res.getResult().getJoinDayCount());
+        assertEquals(Integer.valueOf(12), res.getResult().getFollowCount());
+        assertEquals(Integer.valueOf(34), res.getResult().getFansCount());
+        assertEquals(Integer.valueOf(5), res.getResult().getArticleCount());
+        assertEquals(Integer.valueOf(67), res.getResult().getPraiseCount());
+        assertEquals(Integer.valueOf(890), res.getResult().getReadCount());
+        assertEquals(Integer.valueOf(0), res.getResult().getCollectionCount());
+        verify(userService).queryUserInfoWithStatistic(88L);
+    }
+
+    @Test
+    public void shouldReturnCurrentUserFollowList() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        PageListVo<FollowUserInfoDTO> source = PageListVo.newVo(Collections.singletonList(new FollowUserInfoDTO()), 10L);
+        when(userRelationService.getUserFollowList(eq(88L), any())).thenReturn(source);
+
+        ResVo<PageListVo<FollowUserInfoDTO>> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .userFollows("follow", 1L, 10L);
+
+        assertEquals(source, res.getResult());
+        verify(userRelationService).getUserFollowList(eq(88L), any());
+        verifyNoMoreInteractions(userRelationService);
+    }
+
+    @Test
+    public void shouldReturnFansWithCurrentFollowState() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        PageListVo<FollowUserInfoDTO> source = PageListVo.newVo(Collections.singletonList(new FollowUserInfoDTO()), 10L);
+        when(userRelationService.getUserFansList(eq(88L), any())).thenReturn(source);
+
+        ResVo<PageListVo<FollowUserInfoDTO>> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .userFollows("fans", 1L, 10L);
+
+        assertEquals(source, res.getResult());
+        verify(userRelationService).getUserFansList(eq(88L), any());
+        verify(userRelationService).updateUserFollowRelationId(source, 88L);
+        verifyNoMoreInteractions(userRelationService);
+    }
+
+    @Test
+    public void shouldRejectUnknownFollowListType() {
+        UserRelationService userRelationService = mock(UserRelationService.class);
+
+        ResVo<PageListVo<FollowUserInfoDTO>> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .userFollows("unknown", 1L, 10L);
+
+        assertEquals(StatusEnum.ILLEGAL_ARGUMENTS_MIXED.getCode(), res.getStatus().getCode());
+        verifyNoInteractions(userRelationService);
+    }
+
+    @Test
+    public void shouldReturnCurrentUserArticlesByStatusGroup() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+        ArticleDTO review = new ArticleDTO();
+        review.setArticleId(901L);
+        review.setTitle("待审核文章");
+        review.setStatus(PushStatusEnum.REVIEW.getCode());
+        PageListVo<ArticleDTO> source = PageListVo.newVo(Collections.singletonList(review), 10L);
+        when(articleReadService.queryArticlesByUserAndStatuses(eq(88L), any(),
+                eq(Arrays.asList(PushStatusEnum.ONLINE.getCode(), PushStatusEnum.REVIEW.getCode())))).thenReturn(source);
+
+        ResVo<PageListVo<WxMiniArticleDTO>> res = newController(articleReadService, mock(CategoryService.class), mock(UserService.class))
+                .userArticles("article", 1L, 10L);
+
+        assertEquals(Long.valueOf(901L), res.getResult().getList().get(0).getArticleId());
+        assertEquals(Integer.valueOf(PushStatusEnum.REVIEW.getCode()), res.getResult().getList().get(0).getStatus());
+        assertEquals("审核中", res.getResult().getList().get(0).getStatusText());
+    }
+
+    @Test
+    public void shouldRejectUnknownOwnerArticleType() {
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+
+        ResVo<PageListVo<WxMiniArticleDTO>> res = newController(articleReadService, mock(CategoryService.class), mock(UserService.class))
+                .userArticles("unknown", 1L, 10L);
+
+        assertEquals(StatusEnum.ILLEGAL_ARGUMENTS_MIXED.getCode(), res.getStatus().getCode());
+        verifyNoInteractions(articleReadService);
+    }
+
+    @Test
+    public void shouldPublishOwnedDraftArticle() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+        ArticleWriteService articleWriteService = mock(ArticleWriteService.class);
+        ArticleDO basic = new ArticleDO();
+        basic.setUserId(88L);
+        basic.setStatus(PushStatusEnum.OFFLINE.getCode());
+        basic.setSource(2);
+        when(articleReadService.queryBasicArticle(901L)).thenReturn(basic);
+        ArticleDO saved = new ArticleDO();
+        saved.setUserId(88L);
+        saved.setStatus(PushStatusEnum.REVIEW.getCode());
+        when(articleReadService.queryBasicArticle(902L)).thenReturn(saved);
+        ArticleDTO article = new ArticleDTO();
+        article.setArticleId(901L);
+        article.setAuthor(88L);
+        article.setTitle("草稿");
+        article.setShortTitle("短标题");
+        article.setContent("正文");
+        article.setSummary("摘要");
+        article.setStatus(PushStatusEnum.OFFLINE.getCode());
+        article.setReadType(0);
+        article.setCategory(new CategoryDTO(1L, "Java"));
+        TagDTO tag = new TagDTO();
+        tag.setTagId(7L);
+        tag.setTag("Spring");
+        article.setTags(Collections.singletonList(tag));
+        when(articleReadService.queryDetailArticleInfo(901L)).thenReturn(article);
+        when(articleWriteService.saveArticle(any(), eq(88L))).thenReturn(902L);
+
+        ResVo<Map<String, Object>> res = newController(articleReadService, articleWriteService, mock(CategoryService.class), mock(UserService.class))
+                .publishDraftArticle(901L);
+
+        assertEquals(Long.valueOf(902L), res.getResult().get("articleId"));
+        assertEquals(Integer.valueOf(PushStatusEnum.REVIEW.getCode()), res.getResult().get("status"));
+        verify(articleWriteService).saveArticle(argThat(save -> save != null
+                && Long.valueOf(901L).equals(save.getArticleId())
+                && "post".equals(save.getActionType())
+                && "正文".equals(save.getContent())
+                && save.getTagIds().contains(7L)), eq(88L));
+    }
+
+    @Test
+    public void shouldRejectPublishingArticleOwnedByAnotherUser() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+        ArticleDO basic = new ArticleDO();
+        basic.setUserId(99L);
+        basic.setStatus(PushStatusEnum.OFFLINE.getCode());
+        when(articleReadService.queryBasicArticle(901L)).thenReturn(basic);
+
+        ResVo<Map<String, Object>> res = newController(articleReadService, mock(CategoryService.class), mock(UserService.class))
+                .publishDraftArticle(901L);
+
+        assertEquals(StatusEnum.FORBID_ERROR_MIXED.getCode(), res.getStatus().getCode());
+        verify(articleReadService).queryBasicArticle(901L);
+        verifyNoMoreInteractions(articleReadService);
+    }
+
+    @Test
+    public void shouldRejectPublishingNonDraftArticle() {
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(88L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+        ArticleDO basic = new ArticleDO();
+        basic.setUserId(88L);
+        basic.setStatus(PushStatusEnum.REVIEW.getCode());
+        when(articleReadService.queryBasicArticle(901L)).thenReturn(basic);
+
+        ResVo<Map<String, Object>> res = newController(articleReadService, mock(CategoryService.class), mock(UserService.class))
+                .publishDraftArticle(901L);
+
+        assertEquals(StatusEnum.ILLEGAL_ARGUMENTS_MIXED.getCode(), res.getStatus().getCode());
+        verify(articleReadService).queryBasicArticle(901L);
+        verifyNoMoreInteractions(articleReadService);
+    }
+
+    @Test
+    public void shouldReturnFollowStateForLoggedInReader() {
+        ArticleReadService articleReadService = mock(ArticleReadService.class);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        ArticleDTO article = new ArticleDTO();
+        article.setArticleId(201L);
+        article.setAuthor(301L);
+        article.setTitle("小程序关注");
+        article.setContent("正文");
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(401L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        when(articleReadService.queryFullArticleInfo(201L, 401L)).thenReturn(article);
+        when(userRelationService.getFollowedUserId(Collections.singletonList(301L), 401L)).thenReturn(Collections.singleton(301L));
+
+        ResVo<WxMiniArticleDetailDTO> res = newController(articleReadService, mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, mock(UserService.class))
+                .articleDetail(201L);
+
+        assertTrue(res.getResult().getFollowed());
+    }
+
+    @Test
+    public void shouldSaveRequestedFollowState() {
+        UserService userService = mock(UserService.class);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(401L);
+        ReqInfoContext.addReqInfo(reqInfo);
+        when(userService.queryBasicUserInfo(301L)).thenReturn(new BaseUserInfoDTO().setUserId(301L));
+
+        WxMiniFollowReq followReq = new WxMiniFollowReq();
+        followReq.setFollowed(true);
+        ResVo<Boolean> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, userService)
+                .followAuthor(301L, followReq);
+
+        assertTrue(res.getResult());
+        verify(userRelationService).saveUserRelation(argThat(relation -> relation.getUserId().equals(301L) && relation.getFollowed()));
+    }
+
+    @Test
+    public void shouldRejectFollowingCurrentUser() {
+        UserService userService = mock(UserService.class);
+        UserRelationService userRelationService = mock(UserRelationService.class);
+        ReqInfoContext.ReqInfo reqInfo = new ReqInfoContext.ReqInfo();
+        reqInfo.setUserId(301L);
+        ReqInfoContext.addReqInfo(reqInfo);
+
+        WxMiniFollowReq followReq = new WxMiniFollowReq();
+        followReq.setFollowed(true);
+        ResVo<Boolean> res = newController(mock(ArticleReadService.class), mock(CategoryService.class),
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class), userRelationService, userService)
+                .followAuthor(301L, followReq);
+
+        assertEquals(StatusEnum.FORBID_ERROR_MIXED.getCode(), res.getStatus().getCode());
+        verifyNoInteractions(userService, userRelationService);
     }
 
     @Test
@@ -751,6 +1016,15 @@ public class WxMiniProgramRestControllerTest {
     }
 
     private WxMiniProgramRestController newController(ArticleReadService articleReadService,
+                                                      ArticleWriteService articleWriteService,
+                                                      CategoryService categoryService,
+                                                      UserService userService) {
+        return newController(articleReadService, articleWriteService, categoryService,
+                mock(CommentReadService.class), mock(CommentWriteService.class), mock(UserFootService.class),
+                mock(UserRelationService.class), userService);
+    }
+
+    private WxMiniProgramRestController newController(ArticleReadService articleReadService,
                                                       CategoryService categoryService,
                                                       UserFootService userFootService,
                                                       UserService userService) {
@@ -766,18 +1040,42 @@ public class WxMiniProgramRestControllerTest {
     }
 
     private WxMiniProgramRestController newController(ArticleReadService articleReadService,
-                                                      CategoryService categoryService,
-                                                      CommentReadService commentReadService,
-                                                      CommentWriteService commentWriteService,
-                                                      UserFootService userFootService,
-                                                      UserService userService) {
+                                                       CategoryService categoryService,
+                                                       CommentReadService commentReadService,
+                                                       CommentWriteService commentWriteService,
+                                                       UserFootService userFootService,
+                                                       UserService userService) {
+        return newController(articleReadService, categoryService, commentReadService, commentWriteService, userFootService, mock(UserRelationService.class), userService);
+    }
+
+    private WxMiniProgramRestController newController(ArticleReadService articleReadService,
+                                                       CategoryService categoryService,
+                                                       CommentReadService commentReadService,
+                                                       CommentWriteService commentWriteService,
+                                                       UserFootService userFootService,
+                                                       UserRelationService userRelationService,
+                                                       UserService userService) {
+        return newController(articleReadService, mock(ArticleWriteService.class), categoryService,
+                commentReadService, commentWriteService, userFootService, userRelationService, userService);
+    }
+
+    private WxMiniProgramRestController newController(ArticleReadService articleReadService,
+                                                       ArticleWriteService articleWriteService,
+                                                       CategoryService categoryService,
+                                                       CommentReadService commentReadService,
+                                                       CommentWriteService commentWriteService,
+                                                       UserFootService userFootService,
+                                                       UserRelationService userRelationService,
+                                                       UserService userService) {
         return new WxMiniProgramRestController(
                 mock(WxMiniProgramAuthService.class),
                 articleReadService,
+                articleWriteService,
                 categoryService,
                 commentReadService,
                 commentWriteService,
                 userFootService,
+                userRelationService,
                 userService);
     }
 }

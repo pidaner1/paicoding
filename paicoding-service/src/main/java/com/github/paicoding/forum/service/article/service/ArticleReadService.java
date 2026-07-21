@@ -149,6 +149,16 @@ public interface ArticleReadService {
     PageListVo<ArticleDTO> queryArticlesByUserAndType(Long userId, PageParam pageParam, HomeSelectEnum select);
 
     /**
+     * 按状态查询用户自己的文章列表
+     *
+     * @param userId
+     * @param pageParam
+     * @param statuses
+     * @return
+     */
+    PageListVo<ArticleDTO> queryArticlesByUserAndStatuses(Long userId, PageParam pageParam, List<Integer> statuses);
+
+    /**
      * 文章实体补齐统计、作者、分类标签等信息
      *
      * @param records

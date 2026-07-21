@@ -26,6 +26,8 @@ public class WxMiniArticleDTO implements Serializable {
     private Long categoryId;
     private String category;
     private List<String> tags;
+    private Integer status;
+    private String statusText;
     private Integer readCount;
     private Integer praiseCount;
     private Integer collectionCount;
